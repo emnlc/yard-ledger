@@ -17,6 +17,7 @@ const Dashboard = () => {
 
   return (
     <>
+      <h1 id="user-name"></h1>
       <button onClick={handleLogout}>Logout</button>
     </>
   );
