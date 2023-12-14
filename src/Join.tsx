@@ -7,6 +7,12 @@ import { auth, database } from "./ts/firebase/auth.js"; // get function and auth
 import { ref, set } from "firebase/database";
 import { useNavigate, Link } from "react-router-dom";
 
+import {
+  validate_email,
+  validate_password,
+  validate_field,
+} from "./ts/validateForms.js"; // form validations
+
 const Join = () => {
   const navigate = useNavigate();
 
@@ -36,21 +42,39 @@ const Join = () => {
       const emailInput = document.getElementById(
         "email-input"
       ) as HTMLInputElement;
+      const emailErr = document.getElementById(
+        "email-error-message"
+      ) as HTMLParagraphElement;
       emailInput.classList.add("invalid-field");
+      emailErr.innerHTML = "Please enter a valid email";
+      emailErr.classList.remove("invisible");
+
       isValid = false;
     }
     if (!validate_password(password)) {
       const passwordElement = document.getElementById(
         "password-input"
       ) as HTMLInputElement;
+      const passwordErr = document.getElementById(
+        "password-error-message"
+      ) as HTMLParagraphElement;
       passwordElement.classList.add("invalid-field");
+      passwordErr.innerText = "Please enter a valid password";
+      passwordErr.classList.remove("invisible");
+
       isValid = false;
     }
     if (!validate_field(name)) {
-      const nameElement = document.getElementById(
+      const nameInput = document.getElementById(
         "name-input"
       ) as HTMLInputElement;
-      nameElement.classList.add("invalid-field");
+      const nameErr = document.getElementById(
+        "name-error-message"
+      ) as HTMLParagraphElement;
+      nameInput.classList.add("invalid-field");
+      nameErr.innerHTML = "Please specify your name";
+      nameErr.classList.remove("invisible");
+
       isValid = false;
     }
 
@@ -70,40 +94,34 @@ const Join = () => {
         });
       })
       .catch((error) => {
-        console.error(error);
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        if (errorCode === "auth/email-already-in-use") {
+          const errDisplay = document.getElementById(
+            "email-error-message"
+          ) as HTMLParagraphElement;
+          const emailInput = document.getElementById(
+            "email-input"
+          ) as HTMLInputElement;
+
+          emailInput.classList.add("invalid-field");
+          errDisplay.innerHTML = "Email is already in use";
+          errDisplay.classList.remove("invisible");
+        } else {
+          console.error("full error" + error);
+          console.error("error message: " + errorMessage);
+          console.error("error code: " + errorCode);
+        }
       });
   };
 
-  function validate_email(email: string) {
-    const expression = /^[^@]+@\w+(\.\w+)+\w$/;
-    if (!expression.test(email) == true) {
-      return false; // invvalid email
-    }
-    return true; // valid email
-  }
-
-  function validate_password(password: string) {
-    if (password.length < 6) {
-      return false; // invalid password format
-    }
-    return true; // valid password
-  }
-
-  function validate_field(field: string) {
-    if (field == null || field.length <= 0) {
-      return false;
-    }
-
-    return true;
-  }
-
   return (
     <>
-      <div className="h-screen flex flex-col gap-4 justify-center items-center">
-        <div className="join-container flex flex-col justify-center items-center md:mx-auto w-fit px-12 py-8 gap-8 shadow-xl">
+      <div className="md:h-screen flex flex-col gap-4 justify-center items-center">
+        <div className="join-container flex flex-col justify-center items-center md:mx-auto w-full md:w-fit px-12 py-8 gap-8 md:shadow-lg">
           <h1 className="font-extrabold text-2xl self-start">Join</h1>
 
-          <div className="input-container flex flex-col justify-center items-center gap-4">
+          <div className="input-container flex flex-col justify-center items-center w-full gap-4">
             <div className="input-field w-full flex flex-col">
               <label htmlFor="name-input" className=" self-start text-sm">
                 Name <span className=" text-red-500">*</span>
@@ -112,10 +130,20 @@ const Join = () => {
                 className="px-4 py-2 border rounded-md outline-none text-sm transition-colors focus:border-kelly-green"
                 type="text"
                 id="name-input"
-                onFocus={(e) =>
-                  e.currentTarget.classList.remove("invalid-field")
-                }
+                onFocus={(e) => {
+                  e.currentTarget.classList.remove("invalid-field");
+                  const errDisplay = document.getElementById(
+                    "name-error-message"
+                  ) as HTMLParagraphElement;
+                  errDisplay.classList.add("invisible");
+                }}
               />
+              <p
+                id="name-error-message"
+                className="invisible text-xs transition-all text-red-500"
+              >
+                error message
+              </p>
             </div>
 
             <div className="input-field w-full flex flex-col">
@@ -126,10 +154,20 @@ const Join = () => {
                 className="px-4 py-2 border rounded-md outline-none text-sm transition-colors focus:border-kelly-green"
                 type="email"
                 id="email-input"
-                onFocus={(e) =>
-                  e.currentTarget.classList.remove("invalid-field")
-                }
+                onFocus={(e) => {
+                  e.currentTarget.classList.remove("invalid-field");
+                  const errDisplay = document.getElementById(
+                    "email-error-message"
+                  ) as HTMLParagraphElement;
+                  errDisplay.classList.add("invisible");
+                }}
               />
+              <p
+                id="email-error-message"
+                className="invisible text-xs transition-all text-red-500"
+              >
+                error message
+              </p>
             </div>
 
             <div className="input-field w-full flex flex-col">
@@ -140,10 +178,31 @@ const Join = () => {
                 className="px-4 py-2 border rounded-md outline-none text-sm transition-colors focus:border-kelly-green"
                 type="password"
                 id="password-input"
-                onFocus={(e) =>
-                  e.currentTarget.classList.remove("invalid-field")
-                }
+                onFocus={(e) => {
+                  e.currentTarget.classList.remove("invalid-field");
+                  const errDisplay = document.getElementById(
+                    "password-error-message"
+                  ) as HTMLParagraphElement;
+                  errDisplay.classList.add("invisible");
+                }}
               />
+              <p
+                id="password-error-message"
+                className="invisible text-xs transition-all text-red-500"
+              >
+                error message
+              </p>
+              <div
+                id="password-requirements"
+                className="flex text-xs text-gray-400 w-full px-4"
+              >
+                <ul className=" list-disc">
+                  <li>6 characters minimum</li>
+                  <li>One number</li>
+                  <li>One uppercase letter</li>
+                  <li>One special character !@#$%^&*-</li>
+                </ul>
+              </div>
             </div>
 
             <button

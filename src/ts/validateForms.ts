@@ -7,10 +7,17 @@ const validate_email = (email: string) => {
 };
 
 const validate_password = (password: string) => {
-  if (password.length < 6) {
-    return false; // invalid password format
-  }
-  return true; // valid password
+  const minLengthRegex = /.{6,}/; // At least 6 characters
+  const numberRegex = /\d/; // At least one digit
+  const uppercaseRegex = /[A-Z]/; // At least one uppercase letter
+  const specialCharRegex = /[!@#$%^&*-]/; // At least one special character
+
+  return (
+    minLengthRegex.test(password) &&
+    numberRegex.test(password) &&
+    uppercaseRegex.test(password) &&
+    specialCharRegex.test(password)
+  );
 };
 
 const validate_field = (field: string) => {
