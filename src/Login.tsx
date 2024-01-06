@@ -6,6 +6,9 @@ import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
 
 import { validate_email, validate_password } from "./ts/validateForms.js"; // form validations
 
+//components
+import Button from "./components/Button.js";
+
 const Login = () => {
   const navigate = useNavigate();
 
@@ -90,7 +93,7 @@ const Login = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        navigate("/dashboard");
+        navigate("/home");
       }
     });
 
@@ -104,11 +107,11 @@ const Login = () => {
           <h1 className="font-extrabold text-2xl self-start">Sign In</h1>
 
           <div className="input-field w-full flex flex-col">
-            <label htmlFor="email-input-login" className="text-sm">
+            <label htmlFor="email-input-login" className="text-base">
               Email
             </label>
             <input
-              className="px-4 py-2 border rounded-md outline-none text-sm transition-colors focus:border-kelly-green"
+              className="px-4 py-2 border rounded-md outline-none text-base transition-colors focus:border-kelly-green"
               type="text"
               id="email-input-login"
               onFocus={(e) => {
@@ -122,6 +125,11 @@ const Login = () => {
                 ) as HTMLParagraphElement;
                 emailErr.classList.add("invisible");
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  login();
+                }
+              }}
             />
             <p
               id="login-email-message"
@@ -132,11 +140,11 @@ const Login = () => {
           </div>
 
           <div className="input-field w-full flex flex-col">
-            <label htmlFor="password-input-login" className="text-sm">
+            <label htmlFor="password-input-login" className="text-base">
               Password
             </label>
             <input
-              className="px-4 py-2 border rounded-md outline-none text-sm transition-colors focus:border-kelly-green"
+              className="px-4 py-2 border rounded-md outline-none text-base transition-colors focus:border-kelly-green"
               type="password"
               id="password-input-login"
               onFocus={(e) => {
@@ -145,6 +153,11 @@ const Login = () => {
                   "login-error-message"
                 ) as HTMLParagraphElement;
                 errMsg.classList.add("invisible");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  login();
+                }
               }}
             />
             <p
@@ -155,19 +168,18 @@ const Login = () => {
             </p>
           </div>
 
-          <button
+          <Button
             id="login-btn"
-            className="font-semibold bg-kelly-green rounded-lg px-4 py-2 text-lg text-white shadow-md transition-all hover:brightness-95"
-            onClick={login}
-          >
-            Sign in
-          </button>
+            color="bg-kelly-green"
+            clickFunction={login}
+            text="Sign In"
+          />
 
           <span>or</span>
 
           <button
             id="google-btn"
-            className="font-semibold w-full bg-neutral-100 px-4 py-2  rounded-lg shadow-md transition-all hover:brightness-95"
+            className="font-semibold bg-neutral-100 rounded-lg px-4 py-2 text-lg shadow-md transition-all hover:brightness-95"
             onClick={googleSignIn}
           >
             <img
@@ -178,7 +190,7 @@ const Login = () => {
             Continue with Google
           </button>
         </div>
-        <p className=" text-sm">
+        <p className=" text-base">
           New to Yard Ledger?{" "}
           <Link className="text-blue-500 hover:underline" to={"/join"}>
             Join now

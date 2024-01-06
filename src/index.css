@@ -9,3 +9,21 @@
 .invalid-field {
   border: 1px solid red;
 }
+
+.card {
+  width: 300px; /* Set your desired fixed width */
+  height: 150px; /* Set your desired fixed height */
+  border: 1px solid #ccc;
+  overflow: hidden; /* Prevent content from overflowing the card */
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  background-color: #f0f0f0;
+  padding: 10px;
+  white-space: nowrap; /* Prevent text from wrapping in the title */
+  overflow: hidden; /* Hide overflowing text in the title */
+  text-overflow: ellipsis; /* Show ellipsis (...) for overflow text */
+  min-height: 2em; /* Ensure at least two lines of text height */
+}

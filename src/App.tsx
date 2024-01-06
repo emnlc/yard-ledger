@@ -1,20 +1,35 @@
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import Login from "./Login";
-import Dashboard from "./Dashboard";
+import Dashboard from "./Home";
 import Join from "./Join";
+import ProtectedRoute from "./components/ProtectedRoute";
+import ClientInvoice from "./ClientInvoice";
 
 function App() {
   return (
-    <>
-      <Router>
-        <Routes>
-          <Route path="/" Component={Login}></Route>
-          <Route path="/dashboard" Component={Dashboard}></Route>
-          <Route path="/join" Component={Join}></Route>
-        </Routes>
-      </Router>
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/join" element={<Join />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={"/home/client-invoice/:userUID"}
+          element={
+            <ProtectedRoute>
+              <ClientInvoice />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 

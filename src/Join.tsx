@@ -13,13 +13,16 @@ import {
   validate_field,
 } from "./ts/validateForms.js"; // form validations
 
+//components
+import Button from "./components/Button.js";
+
 const Join = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        navigate("/dashboard");
+        navigate("/home");
       }
     });
 
@@ -205,13 +208,12 @@ const Join = () => {
               </div>
             </div>
 
-            <button
-              className="font-semibold bg-kelly-green rounded-lg px-4 py-2 text-lg text-white shadow-md transition-all hover:brightness-95"
+            <Button
               id="join-btn"
-              onClick={register}
-            >
-              Create Account
-            </button>
+              color="bg-kelly-green"
+              text="Create Account"
+              clickFunction={register}
+            />
           </div>
         </div>
         <p className=" text-sm">
