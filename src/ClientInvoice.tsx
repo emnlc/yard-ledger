@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { User } from "./hooks/User";
 import { database } from "./ts/firebase/auth";
 import { onValue, ref } from "firebase/database";
+import { Link } from "react-router-dom";
 
 import Button from "./components/Button";
 import InvoiceInfo from "./components/InvoiceInfo";
@@ -14,7 +15,8 @@ interface Client {
 }
 
 interface Invoice {
-  id: number;
+  id: string;
+  number: number;
   month: string;
   year: number;
   status: string;
@@ -57,7 +59,8 @@ const ClientInvoice = () => {
       const invoiceData: Invoice[] = [];
       snapshot.forEach((childSnapshot) => {
         invoiceData.push({
-          id: childSnapshot.val().invoiceNumber,
+          id: childSnapshot.key,
+          number: childSnapshot.val().invoiceNumber,
           month: childSnapshot.val().invoiceMonth,
           year: childSnapshot.val().invoiceYear,
           status: childSnapshot.val().invoiceStatus,
@@ -79,7 +82,7 @@ const ClientInvoice = () => {
     <>
       <div
         id="invoice-container"
-        className="container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto"
+        className="md:container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto"
       >
         <div className="invoice-header gap-2 h-60 md:h-96 flex flex-col justify-end items-center md:justify-end md:items-start">
           <h1
@@ -112,47 +115,59 @@ const ClientInvoice = () => {
           <table className="w-full table-fixed">
             <thead className="bg-gray-100 border-b-2 border-gray-200">
               <tr>
-                <th className="p-3 text-base font-semibold tracking-wide text-left">
-                  No.
+                <th className="p-3 text-base font-semibold tracking-wide text-center">
+                  Number
                 </th>
-                <th className="p-3 text-base font-semibold tracking-wide text-left">
+                <th className="p-3 text-base font-semibold tracking-wide text-center">
                   Month
                 </th>
-                <th className="p-3 text-base font-semibold tracking-wide text-left">
+                <th className="p-3 text-base font-semibold tracking-wide text-center">
                   Year
                 </th>
-                <th className="p-3 text-base font-semibold tracking-wide text-left">
+                <th className="p-3 text-base font-semibold tracking-wide text-center">
                   Status
                 </th>
-                <th className="p-3 text-base font-semibold tracking-wide text-left"></th>
+                <th className="p-3 text-base font-semibold tracking-wide text-center"></th>
               </tr>
             </thead>
 
             <tbody className="[&>*:nth-child(odd)]:bg-white [&>*:nth-child(even)]:bg-gray-100">
-              {invoices.map((entry) => {
-                return (
-                  <tr key={entry.id}>
-                    <td className="p-3 text-base font-bold">{entry.id}</td>
-                    <td className="p-3 text-base">{entry.month}</td>
-                    <td className="p-3 text-base">{entry.year}</td>
-                    <td className="p-3 text-base">
-                      <span className={getSpan(entry.status)}>
-                        {entry.status}
-                      </span>
-                    </td>
-                    <td className="p-3 text-base">
-                      <button className="font-bold text-blue-500 hover:underline">
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {invoices
+                .sort((a, b) => b.number - a.number)
+                .map((entry) => {
+                  return (
+                    <tr key={entry.id}>
+                      <td className="p-3 text-base font-bold text-center">
+                        {entry.number}
+                      </td>
+                      <td className="p-3 text-base text-center">
+                        {entry.month}
+                      </td>
+                      <td className="p-3 text-base text-center">
+                        {entry.year}
+                      </td>
+                      <td className="p-3 text-base text-center">
+                        <span className={getSpan(entry.status)}>
+                          {entry.status}
+                        </span>
+                      </td>
+                      <td className="p-3 text-base text-center">
+                        <Link
+                          to={`/home/client-invoice/${userUID}/${entry.id}`}
+                          className="font-bold text-blue-500 hover:underline"
+                        >
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
 
         {/* mobile / small device */}
+
         <div id="mobile-invoice-view" className="flex flex-col gap-8 md:hidden">
           <Button
             text="New Invoice"
@@ -169,7 +184,7 @@ const ClientInvoice = () => {
                   className="invoice-card bg-white border text-base flex flex-col gap-4 overflow-hidden w-full rounded-lg shadow-lg p-4"
                 >
                   <div id="invoice-line-1" className=" flex  w-full">
-                    <p className="flex font-bold">Invoice #{entry.id}</p>
+                    <p className="flex font-bold">Invoice #{entry.number}</p>
                   </div>
                   <div
                     id="invoice-line-2"
@@ -178,9 +193,12 @@ const ClientInvoice = () => {
                     <p>
                       {entry.month}, {entry.year}
                     </p>
-                    <span className="font-bold text-blue-500 hover:underline">
+                    <Link
+                      to={`/home/client-invoice/${userUID}/${entry.id}`}
+                      className="font-bold text-blue-500 hover:underline"
+                    >
                       View
-                    </span>
+                    </Link>
                   </div>
                   <div id="invoice-line-3" className="flex w-full">
                     <span className={getSpan(entry.status)}>

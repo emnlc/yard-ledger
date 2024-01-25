@@ -44,7 +44,7 @@ const Home = () => {
     <>
       <div
         id="clients-container"
-        className="container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto"
+        className="md:container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto"
       >
         <div className="clients-header gap-8  h-60 md:h-96 flex flex-col justify-end items-center md:justify-end md:items-start">
           <h1 id="title" className=" text-5xl font-extrabold row-start-3">

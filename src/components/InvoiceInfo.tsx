@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import Button from "./Button";
 import { database } from "../ts/firebase/auth";
 import { push, ref } from "firebase/database";
+import { useEffect, useState } from "react";
 
 interface Props {
   show: boolean;
@@ -31,6 +32,17 @@ const InvoiceInfo = (props: Props) => {
   const changeShow = () => {
     props.setShow(!props.show);
   };
+
+  const [month, setMonth] = useState("");
+
+  useEffect(() => {
+    // Get the current month in the format YYYY-MM
+    const today = new Date();
+    const currentMonth = today.toISOString().slice(0, 7);
+
+    // Set the current month as the default value
+    setMonth(currentMonth);
+  }, []);
 
   const createInvoice = () => {
     const invoiceInput = document.getElementById(
@@ -101,6 +113,7 @@ const InvoiceInfo = (props: Props) => {
               id="invoice-month"
               required
               type="month"
+              value={month}
               onFocus={(e) => {
                 e.currentTarget.classList.remove("invalid-field");
               }}

@@ -80,8 +80,8 @@ const Login = () => {
         console.log("result: " + result.user);
 
         update(ref(database, "users/" + result.user.uid), {
-          name: result.user.displayName,
-          email: result.user.email,
+          // name: result.user.displayName,
+          // email: result.user.email,
           last_login: Date.now(),
         });
       })

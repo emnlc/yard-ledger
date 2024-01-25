@@ -5,7 +5,7 @@ import { auth } from "../ts/firebase/auth";
 const Navbar = () => {
   return (
     <>
-      <nav className="bg-white flex items-center justify-end py-4 px-12 fixed shadow-lg w-full ">
+      <nav className="bg-white hidden md:flex items-center justify-end py-4 px-12 fixed shadow-lg w-full ">
         <div className="flex gap-10 navbar-links font-semibold">
           <Link
             to={"/home"}
