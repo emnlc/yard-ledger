@@ -18,33 +18,41 @@ const Home = () => {
   const currentUser = User();
   const [clients, setClients] = useState<Clients[]>([]);
   const [show, setShow] = useState(false);
+  const [searchText, setSearchText] = useState<string>("");
 
   const showForm = () => {
     setShow(!show);
   };
 
   useEffect(() => {
-    const clientsRef = ref(database, `users/${currentUser?.uid}/clients/`);
-    onValue(clientsRef, (snapshot) => {
-      const clientsData: Clients[] = [];
-      snapshot.forEach((childSnapshot) => {
-        clientsData.push({
-          id: childSnapshot.key,
-          name: childSnapshot.val().clientName,
-          address: childSnapshot.val().clientAddress,
-          zip: childSnapshot.val().clientZip,
-          lot: childSnapshot.val().clientLot,
+    if (!searchText) {
+      const clientsRef = ref(database, `users/${currentUser?.uid}/clients/`);
+      onValue(clientsRef, (snapshot) => {
+        const clientsData: Clients[] = [];
+        snapshot.forEach((childSnapshot) => {
+          clientsData.push({
+            id: childSnapshot.key,
+            name: childSnapshot.val().clientName,
+            address: childSnapshot.val().clientAddress,
+            zip: childSnapshot.val().clientZip,
+            lot: childSnapshot.val().clientLot,
+          });
         });
+        setClients(clientsData);
       });
-      setClients(clientsData);
-    });
-  }, [currentUser]);
+    } else {
+      const filteredClients = clients.filter((client) =>
+        client.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setClients(filteredClients);
+    }
+  }, [searchText]);
 
   return (
     <>
       <div
         id="clients-container"
-        className="md:container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto"
+        className="md:container flex  h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto"
       >
         <div className="clients-header gap-8  h-60 md:h-96 flex flex-col justify-end items-center md:justify-end md:items-start">
           <h1 id="title" className=" text-5xl font-extrabold row-start-3">
@@ -67,9 +75,11 @@ const Home = () => {
         >
           <input
             type="text"
-            id="pet-name"
+            id="client-name"
             className="rounded-lg border p-4 w-full font-semibold md:place-self-start md:w-80 md:h-10 md:col-span-3 xl:col-span-4 2xl:col-span-5"
             placeholder="Search by name"
+            defaultValue={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
           />
 
           {clients.map((clients) => (

@@ -77,6 +77,10 @@ const InvoiceInfo = (props: Props) => {
       invoiceMonth: months[d.getUTCMonth()],
       invoiceYear: d.getUTCFullYear(),
       invoiceStatus: "Incomplete",
+      invoiceSubtotal: 0,
+      invoiceTotal: 0,
+      invoiceSalesTax: 0,
+      applySales: false,
     });
 
     changeShow();
@@ -113,7 +117,7 @@ const InvoiceInfo = (props: Props) => {
               id="invoice-month"
               required
               type="month"
-              value={month}
+              defaultValue={month}
               onFocus={(e) => {
                 e.currentTarget.classList.remove("invalid-field");
               }}
