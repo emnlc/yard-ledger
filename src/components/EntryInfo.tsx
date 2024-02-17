@@ -90,7 +90,7 @@ const EntryInfo = (props: Props) => {
     const date = new Date(d.value);
     const formattedDate = `${months[date.getUTCMonth()]} ${date.getUTCDate()}`;
     const unit = unitType.value
-      ? `$${unitPrice.value} / ${unitType.value}`
+      ? `${unitPrice.value}/${unitType.value}`
       : `${unitPrice.value}`;
 
     console.log(unit);

@@ -7,6 +7,8 @@ import { User } from "./hooks/User";
 import Button from "./components/Button";
 import EntryInfo from "./components/EntryInfo";
 
+import genPdf from "./ts/pdfGen";
+
 interface Invoice {
   key: string | null;
   number: number;
@@ -25,6 +27,12 @@ interface Entry {
   unitPrice?: number;
   total: number;
   id: string;
+}
+
+interface Client {
+  name: string;
+  address: string;
+  lot: string;
 }
 
 const InvoiceView = () => {
@@ -173,6 +181,69 @@ const InvoiceView = () => {
     });
   });
 
+  const handlePDFGeneration = () => {
+    // sender information
+    const company: string = currentUser!.displayName as string;
+    const address: string = "3325 W Altadena Ave";
+    const city: string = "Phoenix, AZ 85029";
+    const phone: string = "(602) 499-3281";
+    const email: string = currentUser!.email as string;
+
+    // client information
+    const clientRef = ref(
+      database,
+      `users/${currentUser?.uid}/clients/${userUID}`
+    );
+
+    const clientData: Client[] = [];
+
+    onValue(clientRef, (snapshot) => {
+      const data = snapshot.val();
+      clientData.push({
+        name: data.clientName,
+        address: data.clientAddress,
+        lot: data.clientLot,
+      });
+    });
+
+    const clientName: string = clientData[0].name;
+    const clientAddress: string = clientData[0].address;
+    const clientLot: string = clientData[0].lot;
+
+    const date = new Date();
+    const day = date.getDate();
+    const month = date.toLocaleDateString("default", { month: "long" });
+    const year = date.getUTCFullYear();
+    const d: string = `${month} ${day}, ${year}`;
+
+    let lineDates = "";
+    let descriptions = "";
+    let unitPrices = "";
+    let lineTotal = "";
+    entries.forEach((entry) => {
+      lineDates += `${entry.date}\n\n`;
+      descriptions += `${entry.desc}\n\n`;
+      unitPrices += `$${entry.unitPrice}\n\n`;
+      lineTotal += `$${entry.total}\n\n`;
+    });
+
+    genPdf(
+      d,
+      company,
+      address,
+      city,
+      phone,
+      email,
+      clientName,
+      clientAddress,
+      clientLot,
+      lineDates,
+      descriptions,
+      unitPrices,
+      lineTotal
+    );
+  };
+
   return (
     <>
       <div className="md:container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto">
@@ -197,6 +268,12 @@ const InvoiceView = () => {
                   color="bg-kelly-green"
                   id="new-invoice-btn"
                   clickFunction={showEntryForm}
+                />
+                <Button
+                  text="Generate"
+                  color="bg-blue-400"
+                  id="generate-pdf-btn"
+                  clickFunction={handlePDFGeneration}
                 />
               </div>
               <table className="w-full table-auto">
