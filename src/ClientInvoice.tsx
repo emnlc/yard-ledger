@@ -2,11 +2,22 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { User } from "./hooks/User";
 import { database } from "./ts/firebase/auth";
-import { onValue, ref } from "firebase/database";
+import { onValue, ref, remove } from "firebase/database";
 import { Link } from "react-router-dom";
 
-import Button from "./components/Button";
+// import Button from "./components/Button";
 import InvoiceInfo from "./components/InvoiceInfo";
+
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 
 interface Client {
   name: string;
@@ -31,6 +42,14 @@ const ClientInvoice = () => {
 
   const showForm = () => {
     setShow(!show);
+  };
+
+  const deleteInvoice = (id: string) => {
+    const targetInvoice = ref(
+      database,
+      `users/${currentUser?.uid}/clients/${userUID}/invoices/${id}`
+    );
+    remove(targetInvoice);
   };
 
   const clientRef = ref(
@@ -70,14 +89,6 @@ const ClientInvoice = () => {
     });
   }, [currentUser]);
 
-  function getSpan(status: string) {
-    if (status === "Incomplete") {
-      return "p-1.5 text-base font-medium uppercase tracking-wider text-red-800 bg-red-200 rounded-lg bg-opacity-50";
-    }
-
-    return "p-1.5 text-base font-medium uppercase tracking-wider text-green-800 bg-green-200 rounded-lg bg-opacity-50";
-  }
-
   return (
     <>
       <div
@@ -102,79 +113,79 @@ const ClientInvoice = () => {
           </h2>
         </div>
 
-        <div
-          id="clients-body-container-desktop"
-          className="clients-body hidden md:flex md:flex-col md:justify-start md:items-start md:gap-8"
+        <Button
+          className="bg-kelly-green font-bold self-center md:self-start"
+          id="new-invoice-btn"
+          onClick={showForm}
         >
-          <Button
-            text="New Invoice"
-            color="bg-kelly-green"
-            id="new-invoice-btn"
-            clickFunction={showForm}
-          />
-          <table className="w-full table-fixed">
-            <thead className="bg-gray-100 border-b-2 border-gray-200">
-              <tr>
-                <th className="p-3 text-base font-semibold tracking-wide text-center">
-                  Number
-                </th>
-                <th className="p-3 text-base font-semibold tracking-wide text-center">
-                  Month
-                </th>
-                <th className="p-3 text-base font-semibold tracking-wide text-center">
-                  Year
-                </th>
-                <th className="p-3 text-base font-semibold tracking-wide text-center">
-                  Status
-                </th>
-                <th className="p-3 text-base font-semibold tracking-wide text-center"></th>
-              </tr>
-            </thead>
+          New Invoice
+        </Button>
 
-            <tbody className="[&>*:nth-child(odd)]:bg-white [&>*:nth-child(even)]:bg-gray-100">
-              {invoices
-                .sort((a, b) => b.number - a.number)
-                .map((entry) => {
-                  return (
-                    <tr key={entry.id}>
-                      <td className="p-3 text-base font-bold text-center">
-                        {entry.number}
-                      </td>
-                      <td className="p-3 text-base text-center">
-                        {entry.month}
-                      </td>
-                      <td className="p-3 text-base text-center">
-                        {entry.year}
-                      </td>
-                      <td className="p-3 text-base text-center">
-                        <span className={getSpan(entry.status)}>
-                          {entry.status}
-                        </span>
-                      </td>
-                      <td className="p-3 text-base text-center">
-                        <Link
-                          to={`/home/client-invoice/${userUID}/${entry.id}`}
-                          className="font-bold text-blue-500 hover:underline"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableCaption>All invoices for {clientInfo?.name}</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-32"></TableHead>
+              <TableHead className="text-center">Number</TableHead>
+              <TableHead className="text-center">Month</TableHead>
+              <TableHead className="text-center">Year</TableHead>
+              <TableHead className="text-center"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {invoices
+              .sort((a, b) => b.number - a.number)
+              .map((entry) => {
+                return (
+                  <TableRow key={entry.id}>
+                    <TableCell className="flex gap-4 justify-center items-center">
+                      <button
+                        className="text-lg"
+                        onClick={() => {
+                          deleteInvoice(entry.id);
+                          console.log("delete");
+                        }}
+                      >
+                        <i className="fa-regular fa-trash-can text-red-500"></i>
+                      </button>
+                      <button
+                        className="text-lg"
+                        onClick={() => {
+                          console.log("edit");
+                        }}
+                      >
+                        <i className="fa-regular fa-pen-to-square text-green-500"></i>
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-center font-bold">
+                      {entry.number}
+                    </TableCell>
+                    <TableCell className="text-center">{entry.month}</TableCell>
+                    <TableCell className="text-center">{entry.year}</TableCell>
+                    <TableCell className="text-center">
+                      <Link
+                        to={`/home/client-invoice/${userUID}/${entry.id}`}
+                        className="font-bold text-blue-500 hover:underline"
+                      >
+                        View
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+          </TableBody>
+        </Table>
 
         {/* mobile / small device */}
 
-        <div id="mobile-invoice-view" className="flex flex-col gap-8 md:hidden">
+        {/* <div id="mobile-invoice-view" className="flex flex-col gap-8 md:hidden">
           <Button
-            text="New Invoice"
-            color="bg-kelly-green self-center"
+            className="bg-kelly-green self-center"
             id="new-invoice-btn"
-            clickFunction={showForm}
-          />
+            onClick={showForm}
+          >
+            New Invoice
+          </Button>
 
           <div className="clients-body gap-x-8 gap-y-8 grid mx-2 content-center sm:grid-cols-2">
             {invoices.map((entry) => {
@@ -209,7 +220,7 @@ const ClientInvoice = () => {
               );
             })}
           </div>
-        </div>
+        </div> */}
       </div>
 
       {show ? <InvoiceInfo show={show} setShow={setShow}></InvoiceInfo> : null}

@@ -6,6 +6,7 @@ import Join from "./Join";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ClientInvoice from "./ClientInvoice";
 import InvoiceView from "./InvoiceView";
+import Account from "./Account";
 
 function App() {
   return (
@@ -18,6 +19,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/account"
+          element={
+            <ProtectedRoute>
+              <Account />
             </ProtectedRoute>
           }
         />

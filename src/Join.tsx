@@ -14,7 +14,9 @@ import {
 } from "./ts/validateForms.js"; // form validations
 
 //components
-import Button from "./components/Button.js";
+import { Button } from "@/components/ui/button";
+import { Label } from "./components/ui/label.js";
+import { Input } from "./components/ui/input.js";
 
 const Join = () => {
   const navigate = useNavigate();
@@ -48,7 +50,7 @@ const Join = () => {
       const emailErr = document.getElementById(
         "email-error-message"
       ) as HTMLParagraphElement;
-      emailInput.classList.add("invalid-field");
+      emailInput.classList.add("border-red-500");
       emailErr.innerHTML = "Please enter a valid email";
       emailErr.classList.remove("invisible");
 
@@ -61,7 +63,7 @@ const Join = () => {
       const passwordErr = document.getElementById(
         "password-error-message"
       ) as HTMLParagraphElement;
-      passwordElement.classList.add("invalid-field");
+      passwordElement.classList.add("border-red-500");
       passwordErr.innerText = "Please enter a valid password";
       passwordErr.classList.remove("invisible");
 
@@ -74,7 +76,7 @@ const Join = () => {
       const nameErr = document.getElementById(
         "name-error-message"
       ) as HTMLParagraphElement;
-      nameInput.classList.add("invalid-field");
+      nameInput.classList.add("border-red-500");
       nameErr.innerHTML = "Please specify your name";
       nameErr.classList.remove("invisible");
 
@@ -107,7 +109,7 @@ const Join = () => {
             "email-input"
           ) as HTMLInputElement;
 
-          emailInput.classList.add("invalid-field");
+          emailInput.classList.add("border-red-500");
           errDisplay.innerHTML = "Email is already in use";
           errDisplay.classList.remove("invisible");
         } else {
@@ -126,21 +128,22 @@ const Join = () => {
 
           <div className="input-container flex flex-col justify-center items-center w-full gap-4">
             <div className="input-field w-full flex flex-col">
-              <label htmlFor="name-input" className=" self-start text-sm">
-                Name <span className=" text-red-500">*</span>
-              </label>
-              <input
-                className="px-4 py-2 border rounded-md outline-none text-sm transition-colors focus:border-kelly-green"
+              <Label htmlFor="name-input">
+                Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
                 type="text"
                 id="name-input"
+                className="mt-2 transition-all focus:border-kelly-green"
                 onFocus={(e) => {
-                  e.currentTarget.classList.remove("invalid-field");
+                  e.currentTarget.classList.remove("border-red-500");
                   const errDisplay = document.getElementById(
                     "name-error-message"
                   ) as HTMLParagraphElement;
                   errDisplay.classList.add("invisible");
                 }}
-              />
+              ></Input>
+
               <p
                 id="name-error-message"
                 className="invisible text-xs transition-all text-red-500"
@@ -150,21 +153,22 @@ const Join = () => {
             </div>
 
             <div className="input-field w-full flex flex-col">
-              <label htmlFor="email-input" className=" self-start text-sm">
-                Email <span className=" text-red-500">*</span>
-              </label>
-              <input
-                className="px-4 py-2 border rounded-md outline-none text-sm transition-colors focus:border-kelly-green"
+              <Label htmlFor="email-input">
+                Email <span className="text-red-500">*</span>
+              </Label>
+              <Input
                 type="email"
                 id="email-input"
+                className="mt-2 transition-all focus:border-kelly-green"
                 onFocus={(e) => {
-                  e.currentTarget.classList.remove("invalid-field");
+                  e.currentTarget.classList.remove("border-red-500");
                   const errDisplay = document.getElementById(
                     "email-error-message"
                   ) as HTMLParagraphElement;
                   errDisplay.classList.add("invisible");
                 }}
-              />
+              ></Input>
+
               <p
                 id="email-error-message"
                 className="invisible text-xs transition-all text-red-500"
@@ -174,21 +178,21 @@ const Join = () => {
             </div>
 
             <div className="input-field w-full flex flex-col">
-              <label htmlFor="password-input" className=" self-start text-sm">
-                Password <span className=" text-red-500">*</span>
-              </label>
-              <input
-                className="px-4 py-2 border rounded-md outline-none text-sm transition-colors focus:border-kelly-green"
+              <Label htmlFor="password-input">
+                Password <span className="text-red-500">*</span>
+              </Label>
+              <Input
                 type="password"
                 id="password-input"
+                className="mt-2 transition-all focus:border-kelly-green"
                 onFocus={(e) => {
-                  e.currentTarget.classList.remove("invalid-field");
+                  e.currentTarget.classList.remove("border-red-500");
                   const errDisplay = document.getElementById(
                     "password-error-message"
                   ) as HTMLParagraphElement;
                   errDisplay.classList.add("invisible");
                 }}
-              />
+              ></Input>
               <p
                 id="password-error-message"
                 className="invisible text-xs transition-all text-red-500"
@@ -210,10 +214,11 @@ const Join = () => {
 
             <Button
               id="join-btn"
-              color="bg-kelly-green"
-              text="Create Account"
-              clickFunction={register}
-            />
+              className="bg-kelly-green text-bold text-white transition-all hover:brightness-95"
+              onClick={register}
+            >
+              Create Account
+            </Button>
           </div>
         </div>
         <p className=" text-sm">

@@ -2,10 +2,20 @@ import { useState, useEffect } from "react";
 import { User } from "./hooks/User";
 import { database } from "./ts/firebase/auth";
 import { ref, onValue } from "firebase/database";
-import Button from "./components/Button";
-import Card from "./components/Card";
+// import Button from "./components/Button";
+// import Card from "./components/Card";
 import ClientInfo from "./components/ClientInfo";
 
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { Input } from "@/components/ui/input";
 interface Clients {
   id: string;
   name: string;
@@ -62,10 +72,11 @@ const Home = () => {
           <div className="row-start-4">
             <Button
               id="newClientBtn"
-              color="bg-kelly-green"
-              text="Add Client"
-              clickFunction={showForm}
-            />
+              className="bg-kelly-green font-bold"
+              onClick={showForm}
+            >
+              Add Client
+            </Button>
           </div>
         </div>
 
@@ -73,24 +84,42 @@ const Home = () => {
           id="clients-body-container"
           className="clients-body flex flex-col w-full justify-start px-8 md:px-0  items-center gap-8 md:grid md:grid-cols-3 md:gap-x-4 md:gap-y-8 xl:grid-cols-4 2xl:grid-cols-5"
         >
-          <input
+          <Input
             type="text"
             id="client-name"
-            className="rounded-lg border p-4 w-full font-semibold md:place-self-start md:w-80 md:h-10 md:col-span-3 xl:col-span-4 2xl:col-span-5"
+            className="focus:border-kelly-green md:place-self-start md:w-80 md:h-10 md:col-span-3 xl:col-span-4 2xl:col-span-5"
             placeholder="Search by name"
             defaultValue={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-          />
+          ></Input>
 
           {clients.map((clients) => (
-            <Card
-              key={clients.id}
-              id={clients.id}
-              clientName={clients.name}
-              street={clients.address}
-              cityZip={clients.zip + ", AZ"}
-              lot={clients.lot}
-            />
+            <Card key={clients.id}>
+              <CardHeader className="">
+                <CardTitle className="line-clamp-1">{clients.name}</CardTitle>
+                <CardDescription>
+                  <span>{clients.address}</span>
+                  <br />
+                  <span>{clients.lot ? "Lot #" + clients.lot : <br />}</span>
+                </CardDescription>
+              </CardHeader>
+              <CardFooter className="justify-between">
+                <button
+                  className="text-lg"
+                  onClick={() => {
+                    console.log("edit");
+                  }}
+                >
+                  <i className="fa-regular fa-pen-to-square text-green-500"></i>
+                </button>
+                <Link
+                  className="transition-all text-blue-500 hover:underline text-sm font-bold"
+                  to={`/home/client-invoice/${clients.id}`}
+                >
+                  View
+                </Link>
+              </CardFooter>
+            </Card>
           ))}
         </div>
       </div>

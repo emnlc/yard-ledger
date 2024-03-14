@@ -4,10 +4,25 @@ import { useParams } from "react-router-dom";
 import { database } from "./ts/firebase/auth";
 import { User } from "./hooks/User";
 
-import Button from "./components/Button";
+// import Pdf from "@/components/Pdf";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import PdfFile from "./components/PdfFile";
+// import Button from "./components/Button";
 import EntryInfo from "./components/EntryInfo";
 
-import genPdf from "./ts/pdfGen";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+import { Label } from "@/components/ui/label";
+import { Input } from "./components/ui/input";
 
 interface Invoice {
   key: string | null;
@@ -35,12 +50,27 @@ interface Client {
   lot: string;
 }
 
+interface User {
+  // name: string;
+  email: string;
+  company: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  phone: number;
+  a: string;
+  r: string;
+}
+
 const InvoiceView = () => {
   const currentUser = User();
   const [showEntry, setShowEntry] = useState(false);
   const { userUID, invoiceUID } = useParams();
+
   const [invoice, setInvoice] = useState<Invoice>();
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [client, setClient] = useState<Client>();
 
   const showEntryForm = () => {
     setShowEntry(!showEntry);
@@ -54,6 +84,11 @@ const InvoiceView = () => {
   const entriesRef = ref(
     database,
     `users/${currentUser?.uid}/clients/${userUID}/invoices/${invoiceUID}/entries`
+  );
+
+  const clientRef = ref(
+    database,
+    `users/${currentUser?.uid}/clients/${userUID}`
   );
 
   const deleteEntry = (id: string) => {
@@ -141,6 +176,20 @@ const InvoiceView = () => {
   }, [currentUser]);
 
   useEffect(() => {
+    const unsubscribe = onValue(clientRef, (snapshot) => {
+      const data = snapshot.val();
+      setClient({
+        name: data.clientName,
+        address: data.clientAddress,
+        lot: data.clientLot,
+      });
+    });
+
+    // Cleanup function to unsubscribe from the listener when the component unmounts
+    return () => unsubscribe();
+  }, []); // Removed `client` from the dependency array
+
+  useEffect(() => {
     onValue(entriesRef, (snapshot) => {
       const entriesData: Entry[] = [];
 
@@ -156,14 +205,6 @@ const InvoiceView = () => {
       setEntries(entriesData);
     });
   }, [currentUser]);
-
-  function getSpan(status: string) {
-    if (status === "Incomplete") {
-      return "p-1.5 text-base font-medium uppercase tracking-wider text-red-800 bg-red-200 rounded-lg bg-opacity-50";
-    }
-
-    return "p-1.5 text-base font-medium uppercase tracking-wider text-green-800 bg-green-200 rounded-lg bg-opacity-50";
-  }
 
   const initialTotal = entries.reduce(
     (prev, entry) => prev + parseFloat(String(entry.total) || "0"),
@@ -181,193 +222,189 @@ const InvoiceView = () => {
     });
   });
 
-  const handlePDFGeneration = () => {
-    // sender information
-    const company: string = currentUser!.displayName as string;
-    const address: string = "3325 W Altadena Ave";
-    const city: string = "Phoenix, AZ 85029";
-    const phone: string = "(602) 499-3281";
-    const email: string = currentUser!.email as string;
+  const [user, setUser] = useState<User>();
 
-    // client information
-    const clientRef = ref(
-      database,
-      `users/${currentUser?.uid}/clients/${userUID}`
+  useEffect(() => {
+    const unsubscribe = onValue(
+      ref(database, `users/${currentUser?.uid}`),
+      (snapshot) => {
+        const data = snapshot.val();
+        setUser({
+          email: data.email,
+          company: data.company,
+          address: data.address,
+          city: data.city,
+          state: data.state,
+          zip: data.zip,
+          phone: data.phone,
+          a: data.a,
+          r: data.r,
+        });
+      }
     );
 
-    const clientData: Client[] = [];
-
-    onValue(clientRef, (snapshot) => {
-      const data = snapshot.val();
-      clientData.push({
-        name: data.clientName,
-        address: data.clientAddress,
-        lot: data.clientLot,
-      });
-    });
-
-    const clientName: string = clientData[0].name;
-    const clientAddress: string = clientData[0].address;
-    const clientLot: string = clientData[0].lot;
-
-    const date = new Date();
-    const day = date.getDate();
-    const month = date.toLocaleDateString("default", { month: "long" });
-    const year = date.getUTCFullYear();
-    const d: string = `${month} ${day}, ${year}`;
-
-    let lineDates = "";
-    let descriptions = "";
-    let unitPrices = "";
-    let lineTotal = "";
-    entries.forEach((entry) => {
-      lineDates += `${entry.date}\n\n`;
-      descriptions += `${entry.desc}\n\n`;
-      unitPrices += `$${entry.unitPrice}\n\n`;
-      lineTotal += `$${entry.total}\n\n`;
-    });
-
-    genPdf(
-      d,
-      company,
-      address,
-      city,
-      phone,
-      email,
-      clientName,
-      clientAddress,
-      clientLot,
-      lineDates,
-      descriptions,
-      unitPrices,
-      lineTotal
-    );
-  };
+    return unsubscribe;
+  }, [user]);
 
   return (
     <>
       <div className="md:container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto">
-        {invoice && (
+        {invoice && client && (
           <>
             <div className="invoice-entries-header gap-4 h-60 md:h-96 flex flex-col justify-end items-center md:justify-end md:items-start">
               <h1 className="text-center text-5xl font-extrabold ">
                 Invoice #{invoice.number}
               </h1>
               <h1 className="text-center text-xl font-extrabold">
-                {invoice.month}, {invoice.year} {"- "}
-                <span className={getSpan(invoice.status)}>
-                  {invoice.status}
-                </span>
+                {invoice.month}, {invoice.year}
               </h1>
             </div>
 
-            <div className="invoice-entries-body hidden md:flex md:flex-col md:justify-start md:items-start md:gap-8">
-              <div className="flex gap-4">
-                <Button
-                  text="New Line"
-                  color="bg-kelly-green"
-                  id="new-invoice-btn"
-                  clickFunction={showEntryForm}
-                />
-                <Button
-                  text="Generate"
-                  color="bg-blue-400"
-                  id="generate-pdf-btn"
-                  clickFunction={handlePDFGeneration}
-                />
-              </div>
-              <table className="w-full table-auto">
-                <thead className="bg-gray-100 border-b-2 border-gray-200">
-                  <tr>
-                    <th></th>
-                    <th className="p-3 text-base font-semibold tracking-wide text-center">
-                      Date
-                    </th>
-                    <th className="p-3 text-base font-semibold tracking-wide text-left">
-                      Description
-                    </th>
-                    <th className="p-3 text-base font-semibold tracking-wide text-center">
-                      Unit Price
-                    </th>
-                    <th className="p-3 text-base font-semibold tracking-wide text-right">
-                      Line Total
-                    </th>
-                  </tr>
-                </thead>
+            <div className="flex gap-4 self-center md:self-start">
+              <Button
+                id="new-invoice-btn"
+                className="bg-kelly-green hover:opacity-80 transition-all font-bold"
+                onClick={showEntryForm}
+              >
+                New Line
+              </Button>
 
-                <tbody className="[&>*:nth-child(odd)]:bg-white [&>*:nth-child(even)]:bg-gray-100">
-                  {entries.map((entry) => (
-                    <tr key={entry.id}>
-                      <td className="align-middle w-10 text-center ">
-                        <button
-                          onClick={() => {
-                            deleteEntry(entry.id);
-                          }}
-                        >
-                          <img src="/trash.svg" className="w-6 h-6" alt="" />
-                        </button>
-                      </td>
-                      <td className="p-3 text-base font-bold text-center">
-                        {entry.date}
-                      </td>
-                      <td className="p-3 text-base text-left">{entry.desc}</td>
-                      <td className="p-3 text-base text-center">
-                        ${entry.unitPrice}
-                      </td>
-                      <td className="p-3 text-base text-right">
-                        ${entry.total}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="table-footer flex flex-col gap-4 self-end">
-                <div className="price-groups flex flex-col font-extrabold border border-l-0 border-r-0 border-t-0 border-b-black">
-                  <div className="flex w-full gap-16 justify-between">
-                    SUBTOTAL: <span>${invoice.subtotal}</span>
-                  </div>
-                  <div className="flex w-full justify-between">
-                    SALES TAX: <span>${invoice.salesTax}</span>
-                  </div>
-                  <div className="flex w-full justify-between">
-                    TOTAL:{" "}
-                    <span className="self-end">${invoice.finalTotal}</span>
-                  </div>
-                </div>
-                <div className="sales-tax-container w-full flex justify-between items-center self-end font-medium">
-                  <div className="flex gap-4">
-                    <label htmlFor="apply-sales-tax">Discount</label>
-                    <input
-                      type="checkbox"
-                      name="apply-sales-tax"
-                      id="sales-tax-checkbox"
-                      checked={invoice.applySales}
-                      onChange={applySalesTax}
+              {/* <PDFViewer height={450}>
+                <PdfFile invoice="3787" />
+              </PDFViewer> */}
+
+              {user && (
+                <PDFDownloadLink
+                  document={
+                    <PdfFile
+                      invoice={invoice}
+                      entries={entries}
+                      client={client}
+                      user={user}
                     />
-                  </div>
-                  <div className="self-end">
-                    $
-                    <input
-                      type="number"
-                      onChange={applySalesTax}
-                      defaultValue={invoice.salesTax}
-                      id="sales-tax-input"
-                      className="border rounded-md outline-none text-base transition-colors focus:border-kelly-green w-14 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                  </div>
+                  }
+                  fileName="invoice"
+                >
+                  {({ loading }) =>
+                    loading ? (
+                      <Button
+                        id="generate-pdf-btn"
+                        className="bg-blue-400 font-bold"
+                      >
+                        Loading ...
+                      </Button>
+                    ) : (
+                      <Button
+                        id="generate-pdf-btn"
+                        className="bg-blue-400 font-bold"
+                      >
+                        Generate
+                      </Button>
+                    )
+                  }
+                </PDFDownloadLink>
+              )}
+            </div>
+
+            <Table className="hidden md:table">
+              <TableCaption>Entries for {invoice.month}</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-32"></TableHead>
+                  <TableHead className="text-center">Date</TableHead>
+                  <TableHead className="text-left">Description</TableHead>
+                  <TableHead className="text-center">Unit Price</TableHead>
+                  <TableHead className="text-center">Line Total</TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {entries.map((entry) => (
+                  <TableRow key={entry.id}>
+                    <TableCell className="flex gap-4 justify-center items-center">
+                      <button
+                        className="text-lg"
+                        onClick={() => {
+                          deleteEntry(entry.id);
+                        }}
+                      >
+                        <i className="fa-regular fa-trash-can text-red-500"></i>
+                      </button>
+                      <button
+                        className="text-lg"
+                        onClick={() => {
+                          console.log("edit");
+                        }}
+                      >
+                        <i className="fa-regular fa-pen-to-square text-green-500"></i>
+                      </button>
+                    </TableCell>
+                    <TableCell className="font-medium text-center">
+                      {entry.date}
+                    </TableCell>
+                    <TableCell className="font-medium text-left">
+                      {entry.desc}
+                    </TableCell>
+                    <TableCell className="font-medium text-center">
+                      ${entry.unitPrice}
+                    </TableCell>
+                    <TableCell className="text-center font-medium">
+                      {entry.total ? `$${entry.total}` : ""}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <div className="hidden md:flex table-footer flex-col gap-4 self-end">
+              <div className="text-sm price-groups flex flex-col font-medium border border-l-0 border-r-0 border-t-0 border-b-black">
+                <div className="flex w-full gap-16 justify-between">
+                  <span>SUBTOTAL:</span>
+                  <span>${invoice.subtotal}</span>
                 </div>
+
+                <div className="flex w-full gap-16 justify-between">
+                  <span>SALES TAX:</span>
+                  <span>${invoice.salesTax}</span>
+                </div>
+
+                <div className="flex w-full gap-16 justify-between">
+                  <span>TOTAL:</span>
+                  <span>${invoice.finalTotal}</span>
+                </div>
+              </div>
+
+              <div className="sales-tax-container w-full flex justify-between items-center font-medium">
+                <div className="flex justify-center items-center gap-2">
+                  <Label htmlFor="sales-tax-checkbox">Apply Sales</Label>
+                  <input
+                    type="checkbox"
+                    name="apply-sales-tax"
+                    id="sales-tax-checkbox"
+                    checked={invoice.applySales}
+                    onChange={applySalesTax}
+                  />
+                </div>
+
+                <Input
+                  type="number"
+                  onChange={applySalesTax}
+                  defaultValue={invoice.salesTax}
+                  id="sales-tax-input"
+                  className="border rounded-md outline-none text-right text-sm transition-colors focus:border-kelly-green w-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                ></Input>
               </div>
             </div>
 
             {/* Mobile Div */}
             <div className="md:hidden flex flex-col gap-8">
               <div className="button-group flex justify-center">
-                <Button
+                {/* <Button
                   text="New Line"
                   color="bg-kelly-green"
                   id="new-invoice-btn"
                   clickFunction={showEntryForm}
-                />
+                /> */}
               </div>
 
               <div className="entry-container flex flex-col gap-8 ">
@@ -385,7 +422,9 @@ const InvoiceView = () => {
                     </div>
                     <div className="entry-card-right w-full flex flex-col justify-between">
                       <div className="entry-card-line-1 flex justify-between">
-                        <span className=" font-bold">UNIT PRICE:</span>
+                        <span className=" font-bold line-clamp-1">
+                          UNIT PRICE:
+                        </span>
                         <span>${entry.unitPrice}</span>
                       </div>
 

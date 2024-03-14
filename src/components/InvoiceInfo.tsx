@@ -1,10 +1,13 @@
 import { User } from "../hooks/User";
 import { useParams } from "react-router-dom";
 
-import Button from "./Button";
 import { database } from "../ts/firebase/auth";
 import { push, ref } from "firebase/database";
 import { useEffect, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface Props {
   show: boolean;
@@ -54,11 +57,11 @@ const InvoiceInfo = (props: Props) => {
 
     let validationCheck = true;
     if (!invoiceInput.value) {
-      invoiceInput.classList.add("invalid-field");
+      invoiceInput.classList.add("border-red-500");
       validationCheck = false;
     }
     if (!monthInput.value) {
-      monthInput.classList.add("invalid-field");
+      monthInput.classList.add("border-red-500");
       validationCheck = false;
     }
 
@@ -94,49 +97,50 @@ const InvoiceInfo = (props: Props) => {
       >
         <div className=" client-info-form w-full md:w-fit flex flex-col gap-6 bg-white shadow-2xl rounded-lg p-12">
           <div className="flex justify-between flex-col md:flex-row items-center gap-4">
-            <label htmlFor="invoice-number">
-              Invoice <span className="text-red-500">*</span>
-            </label>
+            <Label htmlFor="invoice-number">
+              Invoice Number <span className="text-red-500">*</span>
+            </Label>
 
-            <input
+            <Input
               id="invoice-number"
               type="number"
               required
               onFocus={(e) => {
-                e.currentTarget.classList.remove("invalid-field");
+                e.currentTarget.classList.remove("border-red-500");
               }}
               className="px-4 py-2 text-center w-36 border rounded-md outline-none text-base transition-colors focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            />
+            ></Input>
           </div>
           <div className="flex justify-between flex-col items-center md:flex-row gap-4">
-            <label htmlFor="invoice-month">
+            <Label htmlFor="invoice-month">
               Month <span className="text-red-500">*</span>
-            </label>
-
+            </Label>
             <input
               id="invoice-month"
               required
               type="month"
               defaultValue={month}
               onFocus={(e) => {
-                e.currentTarget.classList.remove("invalid-field");
+                e.currentTarget.classList.remove("border-red-500");
               }}
-              className="px-4 py-2 border rounded-md outline-none text-base transition-colors focus:border-kelly-green"
+              className="text-sm px-4 py-2 border rounded-md outline-none transition-colors focus:border-kelly-green"
             />
           </div>
           <Button
-            text="Cancel"
-            color="bg-gray-500 self-center"
+            className="bg-gray-800 self-center font-bold"
             id="create-client-btn"
-            clickFunction={changeShow}
-          />
+            onClick={changeShow}
+          >
+            Cancel
+          </Button>
 
           <Button
-            text="Create Invoice"
-            color="bg-kelly-green self-center"
+            className="bg-kelly-green self-center font-bold"
             id="create-client-btn"
-            clickFunction={createInvoice}
-          />
+            onClick={createInvoice}
+          >
+            Create Invoice
+          </Button>
         </div>
       </div>
     </>

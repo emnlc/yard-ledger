@@ -1,7 +1,11 @@
-import Button from "./Button";
+// import Button from "./Button";
 import { User } from "../hooks/User";
 import { database } from "../ts/firebase/auth";
 import { ref, push } from "firebase/database";
+
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   show: boolean;
@@ -19,14 +23,9 @@ const ClientInfo = (props: Props) => {
     const clientName = document.getElementById(
       "create-client-name"
     ) as HTMLInputElement;
-    const clientEmail = document.getElementById(
-      "create-client-email"
-    ) as HTMLInputElement;
+
     const clientAddress = document.getElementById(
       "create-client-address"
-    ) as HTMLInputElement;
-    const clientZip = document.getElementById(
-      "create-client-zip"
     ) as HTMLInputElement;
 
     const clientLot = document.getElementById(
@@ -36,15 +35,11 @@ const ClientInfo = (props: Props) => {
     //validate
     let validationCheck = true;
     if (!clientName.value) {
-      clientName.classList.add("invalid-field");
+      clientName.classList.add("border-red-500");
       validationCheck = false;
     }
     if (!clientAddress.value) {
-      clientAddress.classList.add("invalid-field");
-      validationCheck = false;
-    }
-    if (!clientZip.value) {
-      clientZip.classList.add("invalid-field");
+      clientAddress.classList.add("border-red-500");
       validationCheck = false;
     }
 
@@ -55,17 +50,9 @@ const ClientInfo = (props: Props) => {
     const userClientList = ref(database, `users/${currentUser?.uid}/clients/`);
     push(userClientList, {
       clientName: clientName.value,
-      clientEmail: clientEmail.value,
       clientAddress: clientAddress.value,
-      clientZip: clientZip.value,
       clientLot: clientLot.value,
     });
-
-    clientName.value = "";
-    clientEmail.value = "";
-    clientAddress.value = "";
-    clientZip.value = "";
-    clientLot.value = "";
 
     changeShow();
   };
@@ -78,85 +65,70 @@ const ClientInfo = (props: Props) => {
       >
         <div className=" client-info-form flex flex-col gap-6 bg-white shadow-2xl rounded-lg p-12">
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="create-client-fields w-fit flex flex-col">
-              <label htmlFor="create-client-name">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <input
+            <div className="create-client-fields w-full flex flex-col">
+              <Label htmlFor="create-client-name">
+                Client Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
                 type="text"
                 id="create-client-name"
-                className="px-4 py-2 border rounded-md outline-none text-base transition-colors focus:border-kelly-green"
-                onFocus={(e) => {
-                  e.currentTarget.classList.remove("invalid-field");
-                }}
                 required
-              />
-            </div>
-
-            <div className="create-client-fields w-fit flex flex-col">
-              <label htmlFor="create-client-email">Email</label>
-              <input
-                type="email"
-                id="create-client-email"
-                className="px-4 py-2 border rounded-md outline-none text-base transition-colors focus:border-kelly-green"
-              />
+                className="mt-2 focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                onFocus={(e) => {
+                  e.currentTarget.classList.remove("border-red-500");
+                }}
+              ></Input>
             </div>
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 ">
-            <div className="create-client-fields w-fit flex flex-col">
-              <label htmlFor="create-client-address">
+            <div className="create-client-fields w-full flex flex-col">
+              <Label htmlFor="create-client-address">
                 Street Address <span className="text-red-500">*</span>
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 id="create-client-address"
-                className="px-4 py-2 border rounded-md outline-none text-base transition-colors focus:border-kelly-green"
-                onFocus={(e) => {
-                  e.currentTarget.classList.remove("invalid-field");
-                }}
                 required
-              />
+                className="mt-2 focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                onFocus={(e) => {
+                  e.currentTarget.classList.remove("border-red-500");
+                }}
+              ></Input>
             </div>
             <div className="flex w-full flex-row justify-between">
+              <div className="create-client-fields flex flex-col"></div>
               <div className="create-client-fields flex flex-col">
-                <label htmlFor="create-client-zip">
-                  Zip Code <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  id="create-client-zip"
-                  className="px-4 py-2 w-20 border rounded-md outline-none text-base transition-colors focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  onFocus={(e) => {
-                    e.currentTarget.classList.remove("invalid-field");
-                  }}
-                  required
-                />
-              </div>
-              <div className="create-client-fields flex flex-col">
-                <label htmlFor="create-client-lot-number">Lot #</label>
-                <input
+                <Label htmlFor="create-client-lot-number">Lot #</Label>
+
+                <Input
                   type="number"
                   id="create-client-lot-number"
-                  className="px-4 py-2 w-24 border rounded-md outline-none text-base transition-colors focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
+                  required
+                  className="mt-2 focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  onFocus={(e) => {
+                    e.currentTarget.classList.remove("border-red-500");
+                  }}
+                ></Input>
               </div>
             </div>
           </div>
-          <div className="create-client-fields flex flex-col gap-4">
-            <div className="justify-center items-center md:self-end flex flex-col md:flex-row gap-4">
+          <div className="create-client-fields self-center flex flex-col gap-4">
+            <div className="justify-center items-center md:self-end flex flex-col-reverse md:flex-row gap-4">
               <Button
-                text="Cancel"
-                color="bg-gray-500"
-                id="create-client-btn"
-                clickFunction={changeShow}
-              ></Button>
+                id="cancel-create-client-btn"
+                className="bg-gray-800 font-bold"
+                onClick={changeShow}
+              >
+                Cancel
+              </Button>
               <Button
-                text="Create Client"
-                color="bg-kelly-green"
                 id="create-client-btn"
-                clickFunction={handleNewClient}
-              ></Button>
+                className="bg-kelly-green font-bold"
+                onClick={handleNewClient}
+              >
+                Create Client
+              </Button>
             </div>
           </div>
         </div>

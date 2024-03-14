@@ -1,10 +1,13 @@
 import { useParams } from "react-router-dom";
 import { database } from "../ts/firebase/auth";
-import Button from "./Button";
+// import Button from "./Button";
 import { User } from "../hooks/User";
 import { push, ref } from "firebase/database";
-import { useEffect, useState } from "react";
 
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
 interface Props {
   show: boolean;
   setShow: (show: boolean) => void;
@@ -29,19 +32,6 @@ const EntryInfo = (props: Props) => {
   const currentUser = User();
   const { userUID, invoiceUID } = useParams();
 
-  const [today, setToday] = useState("");
-
-  useEffect(() => {
-    // Get the current month in the format YYYY-MM
-    const date = new Date();
-
-    const formattedDate = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1)
-      .toString()
-      .padStart(2, "0")}-${date.getUTCDate().toString().padStart(2, "0")}`;
-
-    setToday(formattedDate);
-  }, []);
-
   const changeShow = () => {
     props.setShow(!props.show);
   };
@@ -64,17 +54,17 @@ const EntryInfo = (props: Props) => {
     let entryValidation = true;
 
     if (!desc.value) {
-      desc.classList.add("invalid-field");
+      desc.classList.add("border-red-500");
       entryValidation = false;
     }
 
     if (!unitPrice.value) {
-      unitPrice.classList.add("invalid-field");
+      unitPrice.classList.add("border-red-500");
       entryValidation = false;
     }
 
     if (!total.value) {
-      total.classList.add("invalid-field");
+      total.classList.add("border-red-500");
       entryValidation = false;
     }
 
@@ -88,12 +78,13 @@ const EntryInfo = (props: Props) => {
     );
 
     const date = new Date(d.value);
-    const formattedDate = `${months[date.getUTCMonth()]} ${date.getUTCDate()}`;
+    const formattedDate = d.value
+      ? `${months[date.getUTCMonth()]} ${date.getUTCDate()}`
+      : "";
+
     const unit = unitType.value
       ? `${unitPrice.value}/${unitType.value}`
       : `${unitPrice.value}`;
-
-    console.log(unit);
 
     push(entriesRef, {
       date: formattedDate,
@@ -113,96 +104,85 @@ const EntryInfo = (props: Props) => {
       >
         <div className="invoice-entry-form flex flex-col gap-8 justify-center items-center bg-white w-full md:w-fit h-full md:h-fit rounded-lg p-12">
           <div className="entry-fields-row-1 entry-group w-full flex flex-col">
-            <label htmlFor="invoice-entry-date">
-              Date <span className="text-red-500">*</span>
-            </label>
+            <Label htmlFor="invoice-entry-date">Date</Label>
             <input
-              className="border rounded-md outline-none text-base transition-colors focus:border-kelly-green"
+              className="border p-2 mt-2 rounded-md  outline-none text-base transition-colors focus:border-kelly-green"
               required
               type="date"
-              defaultValue={today}
               id="invoice-entry-date"
             />
           </div>
           <div className="entry-fields-row-2 entry-group w-full flex flex-col">
-            <label htmlFor="invoice-entry-desc">
-              Description <span className=" text-red-500">*</span>
-            </label>
-            <textarea
+            <Label htmlFor="invoice-entry-desc">
+              Description <span className="text-red-500">*</span>
+            </Label>
+            <Textarea
               required
-              className="px-4 py-2 border rounded-md outline-none text-base transition-colors focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="mt-2 focus:border-kelly-green"
               name="invoice-entry-desc"
               id="invoice-entry-desc"
               cols={30}
               rows={2}
               onFocus={(e) => {
-                e.currentTarget.classList.remove("invalid-field");
+                e.currentTarget.classList.remove("border-red-500");
               }}
-            ></textarea>
+            ></Textarea>
           </div>
           <div className="entry-fields-row-3 entry-group items-center w-full flex gap-4">
             <div className="flex gap-8 items-center">
               <div className="unit-group flex flex-col">
-                <label htmlFor="invoice-entry-unit">
+                <Label htmlFor="invoice-entry-unit-price">
                   Unit Price <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  pattern="\d*"
-                  required
+                </Label>
+                <Input
                   id="invoice-entry-unit-price"
-                  className="px-4 py-2 w-full border rounded-md outline-none text-base transition-colors focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  required
+                  className="mt-2 focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   onFocus={(e) => {
-                    e.currentTarget.classList.remove("invalid-field");
+                    e.currentTarget.classList.remove("border-red-500");
                   }}
-                />
+                ></Input>
               </div>
               <span className=" mt-6">/</span>
               <div className="unit-group flex flex-col">
-                <label htmlFor="invoice-entry-unit-type">Unit Type</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    id="invoice-entry-unit-type"
-                    className="px-4 py-2 w-full border rounded-md outline-none text-base transition-colors focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    onFocus={(e) => {
-                      e.currentTarget.classList.remove("invalid-field");
-                    }}
-                  />
-                </div>
+                <Label htmlFor="invoice-entry-unit-type">Unit Type</Label>
+                <Input
+                  id="invoice-entry-unit-type"
+                  type="text"
+                  className="mt-2  focus:border-kelly-green"
+                ></Input>
               </div>
             </div>
           </div>
           <div className="entry-fields-row-4 entry-group w-full flex flex-col">
-            <label htmlFor="invoice-entry-total">
-              Total $ <span className=" text-red-500">*</span>
-            </label>
-            <span className="flex gap-1">
-              <input
-                required
-                type="number"
-                pattern="\d*"
-                id="invoice-entry-total"
-                className="px-4 py-2 w-36 border rounded-md outline-none text-base transition-colors focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                onFocus={(e) => {
-                  e.currentTarget.classList.remove("invalid-field");
-                }}
-              />
-            </span>
+            <Label htmlFor="invoice-entry-total">
+              Total <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="invoice-entry-total"
+              required
+              type="number"
+              className="w-36 mt-2  focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              onFocus={(e) => {
+                e.currentTarget.classList.remove("border-red-500");
+              }}
+            ></Input>
           </div>
           <div className="entry-fields-row-5 flex flex-col gap-8 md:flex-row">
             <Button
-              text="Cancel"
-              color="bg-gray-500 self-center"
-              id="create-client-btn"
-              clickFunction={changeShow}
-            />
+              className="bg-gray-800"
+              id="cancel-entry-btn"
+              onClick={changeShow}
+            >
+              Cancel
+            </Button>
             <Button
-              text="Create Entry"
-              color="bg-kelly-green self-center"
-              id="create-client-btn"
-              clickFunction={createEntry}
-            />
+              className="bg-kelly-green"
+              id="create-entry-btn"
+              onClick={createEntry}
+            >
+              Create Entry
+            </Button>
           </div>
         </div>
       </div>

@@ -6,8 +6,12 @@ import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
 
 import { validate_email, validate_password } from "./ts/validateForms.js"; // form validations
 
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+
 //components
-import Button from "./components/Button.js";
+// import Button from "./components/Button.js";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -26,20 +30,29 @@ const Login = () => {
       const emailInput = document.getElementById(
         "email-input-login"
       ) as HTMLInputElement;
-      emailInput.classList.add("invalid-field");
+
+      emailInput.classList.add("border-red-500");
+
       const emailErr = document.getElementById(
         "login-email-message"
       ) as HTMLParagraphElement;
+
       emailErr.innerHTML = "Please enter an email";
       emailErr.classList.remove("invisible");
 
       isValid = false;
     }
+
     if (!validate_password(password)) {
       const passwordInput = document.getElementById(
         "password-input-login"
       ) as HTMLInputElement;
-      passwordInput.classList.add("invalid-field");
+      const passwordErr = document.getElementById(
+        "login-password-message"
+      ) as HTMLParagraphElement;
+      passwordErr.classList.remove("invisible");
+      passwordErr.innerHTML = "Please enter a password";
+      passwordInput.classList.add("border-red-500");
       isValid = false;
     }
 
@@ -61,7 +74,7 @@ const Login = () => {
         const errorMessage = error.message;
         if (errorCode === "auth/invalid-credential") {
           const errDisplay = document.getElementById(
-            "login-error-message"
+            "login-password-message"
           ) as HTMLParagraphElement;
 
           errDisplay.innerHTML = "Email or Password is incorrect";
@@ -107,7 +120,28 @@ const Login = () => {
           <h1 className="font-extrabold text-2xl self-start">Sign In</h1>
 
           <div className="input-field w-full flex flex-col">
-            <label htmlFor="email-input-login" className="text-base">
+            <Label htmlFor="email-input-login" className="text-base">
+              Email
+            </Label>
+            <Input
+              type="email"
+              id="email-input-login"
+              className="text-base transition-colors focus:border-kelly-green"
+              onFocus={(e) => {
+                e.currentTarget.classList.remove("border-red-500");
+                const errMsg = document.getElementById(
+                  "login-email-message"
+                ) as HTMLParagraphElement;
+                errMsg.classList.add("invisible");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  login();
+                }
+              }}
+            ></Input>
+
+            {/* <label htmlFor="email-input-login" className="text-base">
               Email
             </label>
             <input
@@ -130,7 +164,8 @@ const Login = () => {
                   login();
                 }
               }}
-            />
+            /> */}
+
             <p
               id="login-email-message"
               className="invisible text-xs transition-all text-red-500"
@@ -140,7 +175,28 @@ const Login = () => {
           </div>
 
           <div className="input-field w-full flex flex-col">
-            <label htmlFor="password-input-login" className="text-base">
+            <Label htmlFor="password-input-login" className="text-base">
+              Password
+            </Label>
+            <Input
+              type="password"
+              id="password-input-login"
+              className="text-base transition-colors focus:border-kelly-green"
+              onFocus={(e) => {
+                e.currentTarget.classList.remove("border-red-500");
+                const errMsg = document.getElementById(
+                  "login-password-message"
+                ) as HTMLParagraphElement;
+                errMsg.classList.add("invisible");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  login();
+                }
+              }}
+            ></Input>
+
+            {/* <label htmlFor="password-input-login" className="text-base">
               Password
             </label>
             <input
@@ -159,9 +215,9 @@ const Login = () => {
                   login();
                 }
               }}
-            />
+            /> */}
             <p
-              id="login-error-message"
+              id="login-password-message"
               className=" invisible text-xs transition-all text-red-500"
             >
               error message
@@ -170,27 +226,28 @@ const Login = () => {
 
           <Button
             id="login-btn"
-            color="bg-kelly-green"
-            clickFunction={login}
-            text="Sign In"
-          />
+            className="bg-kelly-green font-bold transition-all hover:brightness-95"
+            onClick={login}
+          >
+            Sign In
+          </Button>
 
           <span>or</span>
 
-          <button
+          <Button
             id="google-btn"
-            className="font-semibold bg-neutral-100 rounded-lg px-4 py-2 text-lg shadow-md transition-all hover:brightness-95"
+            className="bg-neutral-100 font-bold text-black transition-all hover:brightness-95"
             onClick={googleSignIn}
           >
             <img
-              className="h-8 w-8 align-middle inline"
+              className="h-8 w-8 align-middle inline mr-2"
               src="/google.svg"
               alt=""
             />{" "}
             Continue with Google
-          </button>
+          </Button>
         </div>
-        <p className=" text-base">
+        <p className="text-sm">
           New to Yard Ledger?{" "}
           <Link className="text-blue-500 hover:underline" to={"/join"}>
             Join now
