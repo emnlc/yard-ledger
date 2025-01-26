@@ -2,7 +2,7 @@ import { User } from "../hooks/User";
 import { useParams } from "react-router-dom";
 import { database } from "../ts/firebase/auth";
 import { push, ref } from "firebase/database";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -42,8 +42,6 @@ const InvoiceInfo = (props: Props) => {
     props.setShow(!props.show);
   };
 
-  const [month, setMonth] = useState("");
-
   // Initialize date state with the current month and year
   const [date, setDate] = useState<Date>(() => {
     const today = new Date();
@@ -58,13 +56,6 @@ const InvoiceInfo = (props: Props) => {
   // State to control the open/close state of the month and year pickers
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
   const [isYearPickerOpen, setIsYearPickerOpen] = useState(false);
-
-  useEffect(() => {
-    // Get the current month in the format YYYY-MM
-    const today = new Date();
-    const currentMonth = today.toISOString().slice(0, 7);
-    setMonth(currentMonth);
-  }, []);
 
   const createInvoice = () => {
     const invoiceInput = document.getElementById(
