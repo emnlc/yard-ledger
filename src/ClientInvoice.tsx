@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { User } from "./hooks/User";
 import { database } from "./ts/firebase/auth";
-import { onValue, ref, remove } from "firebase/database";
+import { onValue, ref } from "firebase/database";
 import { Link } from "react-router-dom";
 import InvoiceInfo from "./components/InvoiceInfo";
 import EditInvoiceInfoModal from "./components/EditInvoiceInfoModal";
@@ -43,14 +43,6 @@ const ClientInvoice = () => {
 
   const showForm = () => {
     setShow(!show);
-  };
-
-  const deleteInvoice = (id: string) => {
-    const targetInvoice = ref(
-      database,
-      `users/${currentUser?.uid}/clients/${userUID}/invoices/${id}`
-    );
-    remove(targetInvoice);
   };
 
   const clientRef = ref(
@@ -140,15 +132,6 @@ const ClientInvoice = () => {
                 return (
                   <TableRow key={entry.id}>
                     <TableCell className="flex gap-4 justify-center items-center">
-                      <button
-                        className="text-lg"
-                        onClick={() => {
-                          deleteInvoice(entry.id);
-                          console.log("delete");
-                        }}
-                      >
-                        <i className="fa-regular fa-trash-can text-red-500"></i>
-                      </button>
                       <button
                         className="text-lg"
                         onClick={() => {

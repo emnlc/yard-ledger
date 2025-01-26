@@ -1,13 +1,22 @@
 import { useParams } from "react-router-dom";
 import { database } from "../ts/firebase/auth";
-// import Button from "./Button";
 import { User } from "../hooks/User";
 import { push, ref } from "firebase/database";
-
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useState } from "react";
+import { format } from "date-fns";
+
 interface Props {
   show: boolean;
   setShow: (show: boolean) => void;
@@ -36,19 +45,33 @@ const EntryInfo = (props: Props) => {
     props.setShow(!props.show);
   };
 
+  // State for the selected dates
+  const [dates, setDates] = useState<Date[]>();
+
+  // State for the unit price
+  const [unitPrice, setUnitPrice] = useState<string>("");
+
+  // State for the total
+  const [total, setTotal] = useState<string>("");
+
+  // Handle unit price changes
+  const handleUnitPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setUnitPrice(value);
+    setTotal(value); // Update the total with the same value
+  };
+
+  // Handle total changes
+  const handleTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTotal(e.target.value); // Allow manual editing of the total
+  };
+
   const createEntry = () => {
-    const d = document.getElementById("invoice-entry-date") as HTMLInputElement;
     const desc = document.getElementById(
       "invoice-entry-desc"
     ) as HTMLTextAreaElement;
-    const unitPrice = document.getElementById(
-      "invoice-entry-unit-price"
-    ) as HTMLInputElement;
     const unitType = document.getElementById(
       "invoice-entry-unit-type"
-    ) as HTMLInputElement;
-    const total = document.getElementById(
-      "invoice-entry-total"
     ) as HTMLInputElement;
 
     let entryValidation = true;
@@ -58,13 +81,19 @@ const EntryInfo = (props: Props) => {
       entryValidation = false;
     }
 
-    if (!unitPrice.value) {
-      unitPrice.classList.add("border-red-500");
+    if (!unitPrice) {
+      const unitPriceInput = document.getElementById(
+        "invoice-entry-unit-price"
+      ) as HTMLInputElement;
+      unitPriceInput.classList.add("border-red-500");
       entryValidation = false;
     }
 
-    if (!total.value) {
-      total.classList.add("border-red-500");
+    if (!total) {
+      const totalInput = document.getElementById(
+        "invoice-entry-total"
+      ) as HTMLInputElement;
+      totalInput.classList.add("border-red-500");
       entryValidation = false;
     }
 
@@ -77,21 +106,36 @@ const EntryInfo = (props: Props) => {
       `users/${currentUser?.uid}/clients/${userUID}/invoices/${invoiceUID}/entries`
     );
 
-    const date = new Date(d.value);
-    const formattedDate = d.value
-      ? `${months[date.getUTCMonth()]} ${date.getUTCDate()}`
-      : "";
-
     const unit = unitType.value
-      ? `${unitPrice.value}/${unitType.value}`
-      : `${unitPrice.value}`;
+      ? `${unitPrice}/${unitType.value}`
+      : `${unitPrice}`;
 
-    push(entriesRef, {
-      date: formattedDate,
-      description: desc.value,
-      total: total.value,
-      unitPrice: unit,
-    });
+    if (dates && dates.length > 0) {
+      // Create an entry for each selected date
+      dates.forEach((date) => {
+        const formattedDate = `${
+          months[date.getUTCMonth()]
+        } ${date.getUTCDate()}`;
+
+        push(entriesRef, {
+          date: formattedDate,
+          description: desc.value,
+          total: total,
+          unitPrice: unit,
+          unitType: "",
+          rawDate: date.toUTCString(), // Add rawDate in UTC format
+        });
+      });
+    } else {
+      push(entriesRef, {
+        date: "",
+        description: desc.value,
+        total: total,
+        unitPrice: unit,
+        unitType: "",
+        rawDate: "",
+      });
+    }
 
     changeShow();
   };
@@ -105,12 +149,36 @@ const EntryInfo = (props: Props) => {
         <div className="invoice-entry-form flex flex-col gap-8 justify-center items-center bg-white w-full md:w-fit h-full md:h-fit rounded-lg p-12">
           <div className="entry-fields-row-1 entry-group w-full flex flex-col">
             <Label htmlFor="invoice-entry-date">Date</Label>
-            <input
-              className="border p-2 mt-2 rounded-md  outline-none text-base transition-colors focus:border-kelly-green"
-              required
-              type="date"
-              id="invoice-entry-date"
-            />
+            <Popover>
+              <PopoverTrigger asChild className="mt-2">
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-[280px] justify-start text-left font-normal",
+                    !dates || dates.length === 0 ? "text-muted-foreground" : ""
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dates && dates.length > 0 ? (
+                    <span>
+                      {dates.length === 1
+                        ? format(dates[0], "PPP") // Show the selected date if only one is selected
+                        : `${dates.length} dates selected`}
+                    </span>
+                  ) : (
+                    <span>Select date(s)</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="multiple" // Enable multiple date selection
+                  selected={dates}
+                  onSelect={setDates}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="entry-fields-row-2 entry-group w-full flex flex-col">
             <Label htmlFor="invoice-entry-desc">
@@ -137,6 +205,8 @@ const EntryInfo = (props: Props) => {
                 <Input
                   id="invoice-entry-unit-price"
                   required
+                  value={unitPrice}
+                  onChange={handleUnitPriceChange}
                   className="mt-2 focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   onFocus={(e) => {
                     e.currentTarget.classList.remove("border-red-500");
@@ -162,6 +232,8 @@ const EntryInfo = (props: Props) => {
               id="invoice-entry-total"
               required
               type="number"
+              value={total}
+              onChange={handleTotalChange}
               className="w-36 mt-2  focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               onFocus={(e) => {
                 e.currentTarget.classList.remove("border-red-500");
@@ -181,7 +253,7 @@ const EntryInfo = (props: Props) => {
               id="create-entry-btn"
               onClick={createEntry}
             >
-              Create Entry
+              Create Entries
             </Button>
           </div>
         </div>

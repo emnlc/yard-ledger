@@ -24,6 +24,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "./components/ui/input";
 
+import EditEntryInfoModal from "./components/EditEntryInfoModal";
+
 interface Invoice {
   key: string | null;
   number: number;
@@ -42,6 +44,8 @@ interface Entry {
   unitPrice?: number;
   total: number;
   id: string;
+  unitType?: string;
+  rawDate: string;
 }
 
 interface Client {
@@ -66,11 +70,27 @@ interface User {
 const InvoiceView = () => {
   const currentUser = User();
   const [showEntry, setShowEntry] = useState(false);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
+
   const { userUID, invoiceUID } = useParams();
 
   const [invoice, setInvoice] = useState<Invoice>();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [client, setClient] = useState<Client>();
+
+  // Open the edit modal and set the selected entry
+  const handleEditClick = (entry: Entry) => {
+    setSelectedEntry(entry);
+    setIsEditModalOpen(true);
+  };
+
+  // Close the edit modal
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedEntry(null);
+  };
 
   const showEntryForm = () => {
     setShowEntry(!showEntry);
@@ -200,6 +220,7 @@ const InvoiceView = () => {
           unitPrice: childsnapshot.val().unitPrice,
           total: childsnapshot.val().total,
           id: childsnapshot.key,
+          rawDate: childsnapshot.val().rawDate,
         });
       });
       setEntries(entriesData);
@@ -324,17 +345,13 @@ const InvoiceView = () => {
                     <TableCell className="flex gap-4 justify-center items-center">
                       <button
                         className="text-lg"
-                        onClick={() => {
-                          deleteEntry(entry.id);
-                        }}
+                        onClick={() => deleteEntry(entry.id)}
                       >
                         <i className="fa-regular fa-trash-can text-red-500"></i>
                       </button>
                       <button
                         className="text-lg"
-                        onClick={() => {
-                          console.log("edit");
-                        }}
+                        onClick={() => handleEditClick(entry)}
                       >
                         <i className="fa-regular fa-pen-to-square text-green-500"></i>
                       </button>
@@ -481,6 +498,16 @@ const InvoiceView = () => {
       {showEntry ? (
         <EntryInfo show={showEntry} setShow={setShowEntry}></EntryInfo>
       ) : null}
+
+      {isEditModalOpen && selectedEntry && (
+        <EditEntryInfoModal
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          entry={selectedEntry}
+          userUID={userUID!}
+          invoiceUID={invoiceUID!}
+        />
+      )}
     </>
   );
 };

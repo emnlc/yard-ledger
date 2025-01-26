@@ -57,6 +57,10 @@ const InvoiceInfo = (props: Props) => {
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
   const [isYearPickerOpen, setIsYearPickerOpen] = useState(false);
 
+  // Generate a range of years (2 years before and after the current year)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 3 }, (_, i) => currentYear - 1 + i);
+
   const createInvoice = () => {
     const invoiceInput = document.getElementById(
       "invoice-number"
@@ -68,7 +72,6 @@ const InvoiceInfo = (props: Props) => {
       validationCheck = false;
     }
     if (!date) {
-      alert("Please select a month and year.");
       validationCheck = false;
     }
 
@@ -79,14 +82,17 @@ const InvoiceInfo = (props: Props) => {
       `users/${currentUser?.uid}/clients/${userUID}/invoices`
     );
 
-    // Extract month and year from the `date` state
-    const selectedMonth = months[date.getMonth()]; // Get the month name (e.g., "January")
-    const selectedYear = date.getFullYear(); // Get the year (e.g., 2023)
+    const selectedMonth = months[date.getMonth()];
+    const selectedYear = date.getFullYear();
+
+    // Create a new Date object for the selected month and year
+    const rawDate = new Date(selectedYear, date.getMonth(), 1);
 
     push(clientInvoiceList, {
       invoiceNumber: invoiceInput.value,
-      invoiceMonth: selectedMonth, // Use the selected month
-      invoiceYear: selectedYear, // Use the selected year
+      invoiceMonth: selectedMonth,
+      invoiceYear: selectedYear,
+      rawDate: rawDate.toUTCString(),
       invoiceStatus: "Incomplete",
       invoiceSubtotal: 0,
       invoiceTotal: 0,
@@ -96,9 +102,6 @@ const InvoiceInfo = (props: Props) => {
 
     changeShow();
   };
-
-  // Generate a list of years (e.g., from 2020 to 2030)
-  const years = Array.from({ length: 11 }, (_, i) => 2020 + i);
 
   // Custom Month Picker
   const renderMonthPicker = () => {
@@ -150,6 +153,7 @@ const InvoiceInfo = (props: Props) => {
         className="bg-black bg-opacity-60 client-info-container fixed flex flex-col justify-center items-center px-8 inset-x-0 inset-y-0 m-auto"
       >
         <div className="client-info-form w-full md:w-fit flex flex-col gap-6 bg-white shadow-2xl rounded-lg p-12">
+          <h2 className="text-2xl font-bold mb-4">New Invoice</h2>
           <div className="flex justify-between flex-col md:flex-row items-center gap-4">
             <Label htmlFor="invoice-number">
               Invoice Number <span className="text-red-500">*</span>
@@ -161,7 +165,7 @@ const InvoiceInfo = (props: Props) => {
               onFocus={(e) => {
                 e.currentTarget.classList.remove("border-red-500");
               }}
-              className="px-4 py-2 text-center md:w-36 border rounded-md outline-none text-base transition-colors focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="px-4 py-2 text-center md:w-36 border rounded-md outline-none transition-colors focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
 
