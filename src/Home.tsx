@@ -2,10 +2,7 @@ import { useState, useEffect } from "react";
 import { User } from "./hooks/User";
 import { database } from "./ts/firebase/auth";
 import { ref, onValue } from "firebase/database";
-// import Button from "./components/Button";
-// import Card from "./components/Card";
 import ClientInfo from "./components/ClientInfo";
-
 import {
   Card,
   CardDescription,
@@ -16,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
+
 interface Clients {
   id: string;
   name: string;
@@ -48,7 +46,15 @@ const Home = () => {
             lot: childSnapshot.val().clientLot,
           });
         });
-        setClients(clientsData);
+
+        const sortedClients = clientsData.sort((a, b) => {
+          if (a.lot === undefined && b.lot === undefined) return 0;
+          if (a.lot === undefined) return 1;
+          if (b.lot === undefined) return -1;
+          return b.lot - a.lot;
+        });
+
+        setClients(sortedClients);
       });
     } else {
       const filteredClients = clients.filter((client) =>
@@ -62,10 +68,10 @@ const Home = () => {
     <>
       <div
         id="clients-container"
-        className="md:container flex  h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto"
+        className="md:container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto"
       >
-        <div className="clients-header gap-8  h-60 md:h-96 flex flex-col justify-end items-center md:justify-end md:items-start">
-          <h1 id="title" className=" text-5xl font-extrabold row-start-3">
+        <div className="clients-header gap-8 h-60 md:h-96 flex flex-col justify-end items-center md:justify-end md:items-start">
+          <h1 id="title" className="text-5xl font-extrabold row-start-3">
             Clients
           </h1>
 
@@ -82,7 +88,7 @@ const Home = () => {
 
         <div
           id="clients-body-container"
-          className="clients-body flex flex-col w-full justify-start px-8 md:px-0  items-center gap-8 md:grid md:grid-cols-3 md:gap-x-4 md:gap-y-8 xl:grid-cols-4 2xl:grid-cols-5"
+          className="clients-body flex flex-col w-full justify-start px-8 md:px-0 items-center gap-8 md:grid md:grid-cols-3 md:gap-x-4 md:gap-y-8 xl:grid-cols-4 2xl:grid-cols-5"
         >
           <Input
             type="text"
@@ -93,17 +99,18 @@ const Home = () => {
             onChange={(e) => setSearchText(e.target.value)}
           ></Input>
 
-          {clients.map((clients) => (
-            <Card key={clients.id}>
-              <CardHeader className="">
-                <CardTitle className="line-clamp-1">{clients.name}</CardTitle>
+          {clients.map((client) => (
+            <Card key={client.id}>
+              <CardHeader>
+                <CardTitle className="line-clamp-1">{client.name}</CardTitle>
                 <CardDescription>
-                  <span>{clients.address}</span>
+                  <span>{client.address}</span>
                   <br />
-                  <span>{clients.lot ? "Lot #" + clients.lot : <br />}</span>
+                  <span>{client.lot ? "Lot #" + client.lot : <br />}</span>
                 </CardDescription>
               </CardHeader>
               <CardFooter className="justify-between">
+                {/* TODO: edit modal for client info */}
                 <button
                   className="text-lg"
                   onClick={() => {
@@ -114,7 +121,7 @@ const Home = () => {
                 </button>
                 <Link
                   className="transition-all text-blue-500 hover:underline text-sm font-bold"
-                  to={`/home/client-invoice/${clients.id}`}
+                  to={`/home/client-invoice/${client.id}`}
                 >
                   View
                 </Link>

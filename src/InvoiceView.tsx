@@ -1,15 +1,11 @@
-import { onValue, ref, remove, update } from "firebase/database";
+import { onValue, ref, update } from "firebase/database";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { database } from "./ts/firebase/auth";
 import { User } from "./hooks/User";
-
-// import Pdf from "@/components/Pdf";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import PdfFile from "./components/PdfFile";
-// import Button from "./components/Button";
 import EntryInfo from "./components/EntryInfo";
-
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -20,10 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
 import { Label } from "@/components/ui/label";
 import { Input } from "./components/ui/input";
-
 import EditEntryInfoModal from "./components/EditEntryInfoModal";
 
 interface Invoice {
@@ -44,7 +38,7 @@ interface Entry {
   unitPrice?: number;
   total: number;
   id: string;
-  unitType?: string;
+  unitType: string;
   rawDate: string;
 }
 
@@ -55,7 +49,6 @@ interface Client {
 }
 
 interface User {
-  // name: string;
   email: string;
   company: string;
   address: string;
@@ -70,12 +63,9 @@ interface User {
 const InvoiceView = () => {
   const currentUser = User();
   const [showEntry, setShowEntry] = useState(false);
-
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
-
   const { userUID, invoiceUID } = useParams();
-
   const [invoice, setInvoice] = useState<Invoice>();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [client, setClient] = useState<Client>();
@@ -110,15 +100,6 @@ const InvoiceView = () => {
     database,
     `users/${currentUser?.uid}/clients/${userUID}`
   );
-
-  const deleteEntry = (id: string) => {
-    const invoiceToDelete = ref(
-      database,
-      `users/${currentUser?.uid}/clients/${userUID}/invoices/${invoiceUID}/entries/${id}`
-    );
-
-    remove(invoiceToDelete);
-  };
 
   const applySalesTax = () => {
     const salesTaxStatus = (
@@ -207,7 +188,7 @@ const InvoiceView = () => {
 
     // Cleanup function to unsubscribe from the listener when the component unmounts
     return () => unsubscribe();
-  }, []); // Removed `client` from the dependency array
+  }, []);
 
   useEffect(() => {
     onValue(entriesRef, (snapshot) => {
@@ -218,11 +199,32 @@ const InvoiceView = () => {
           date: childsnapshot.val().date,
           desc: childsnapshot.val().description,
           unitPrice: childsnapshot.val().unitPrice,
+          unitType: childsnapshot.val().unitType,
           total: childsnapshot.val().total,
           id: childsnapshot.key,
           rawDate: childsnapshot.val().rawDate,
         });
       });
+
+      // Sort entries by rawDate in descending order (most recent first)
+      // Entries without rawDate will be placed at the end
+      entriesData.sort((a, b) => {
+        const dateA = a.rawDate ? new Date(a.rawDate).getTime() : Infinity;
+        const dateB = b.rawDate ? new Date(b.rawDate).getTime() : Infinity;
+
+        // If both have rawDate, sort by date
+        if (dateA !== Infinity && dateB !== Infinity) {
+          return dateA - dateB; // Sort in ascending order
+        }
+
+        // If one has rawDate and the other doesn't, the one with rawDate comes first
+        if (dateA !== Infinity) return -1;
+        if (dateB !== Infinity) return 1;
+
+        // If neither has rawDate, maintain their original order
+        return 0;
+      });
+
       setEntries(entriesData);
     });
   }, [currentUser]);
@@ -290,10 +292,6 @@ const InvoiceView = () => {
                 New Line
               </Button>
 
-              {/* <PDFViewer height={450}>
-                <PdfFile invoice="3787" />
-              </PDFViewer> */}
-
               {user && (
                 <PDFDownloadLink
                   document={
@@ -345,12 +343,6 @@ const InvoiceView = () => {
                     <TableCell className="flex gap-4 justify-center items-center">
                       <button
                         className="text-lg"
-                        onClick={() => deleteEntry(entry.id)}
-                      >
-                        <i className="fa-regular fa-trash-can text-red-500"></i>
-                      </button>
-                      <button
-                        className="text-lg"
                         onClick={() => handleEditClick(entry)}
                       >
                         <i className="fa-regular fa-pen-to-square text-green-500"></i>
@@ -363,7 +355,10 @@ const InvoiceView = () => {
                       {entry.desc}
                     </TableCell>
                     <TableCell className="font-medium text-center">
-                      ${entry.unitPrice}
+                      $
+                      {entry.unitType
+                        ? `${entry.unitPrice} / ${entry.unitType}`
+                        : entry.unitPrice}
                     </TableCell>
                     <TableCell className="text-center font-medium">
                       {entry.total ? `$${entry.total}` : ""}
@@ -415,14 +410,7 @@ const InvoiceView = () => {
 
             {/* Mobile Div */}
             <div className="md:hidden flex flex-col gap-8">
-              <div className="button-group flex justify-center">
-                {/* <Button
-                  text="New Line"
-                  color="bg-kelly-green"
-                  id="new-invoice-btn"
-                  clickFunction={showEntryForm}
-                /> */}
-              </div>
+              <div className="button-group flex justify-center"></div>
 
               <div className="entry-container flex flex-col gap-8 ">
                 <div className="invoice-total-line flex justify-center font-bold text-2xl">
@@ -442,7 +430,12 @@ const InvoiceView = () => {
                         <span className=" font-bold line-clamp-1">
                           UNIT PRICE:
                         </span>
-                        <span>${entry.unitPrice}</span>
+                        <span>
+                          $
+                          {entry.unitType
+                            ? `${entry.unitPrice} / ${entry.unitType}`
+                            : entry.unitPrice}
+                        </span>
                       </div>
 
                       <div className="entry-card-line-2 flex justify-between">

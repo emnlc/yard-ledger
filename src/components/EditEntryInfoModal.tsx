@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { database } from "../ts/firebase/auth";
-import { ref, update } from "firebase/database";
+import { ref, remove, update } from "firebase/database";
 import { User } from "../hooks/User";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -54,16 +54,6 @@ const EditEntryInfoModal = ({
   ); // Allow string for empty input
   const [unitType, setUnitType] = useState(entry.unitType);
   const [total, setTotal] = useState<string | number>(entry.total); // Allow string for empty input
-  const [isTotalManuallySet, setIsTotalManuallySet] = useState(false); // Track if total is manually set
-
-  // Update total when unitPrice changes (if total hasn't been manually set)
-  useEffect(() => {
-    if (!isTotalManuallySet) {
-      const parsedUnitPrice =
-        typeof unitPrice === "string" ? parseFloat(unitPrice) : unitPrice;
-      setTotal(isNaN(parsedUnitPrice) ? "" : parsedUnitPrice); // Set to empty string if unitPrice is empty or invalid
-    }
-  }, [unitPrice, isTotalManuallySet]);
 
   // Handle saving changes to Firebase
   const handleSaveChanges = () => {
@@ -82,7 +72,7 @@ const EditEntryInfoModal = ({
     const parsedTotal = typeof total === "string" ? parseFloat(total) : total;
 
     update(entryRef, {
-      date: date ? format(date, "MMM dd") : "", // Format the date as "Oct 01" or empty string if no date
+      date: date ? format(date, "MMM d") : "", // Format the date as "Oct 01" or empty string if no date
       description: desc,
       unitPrice: isNaN(parsedUnitPrice) ? 0 : parsedUnitPrice, // Save 0 if unitPrice is empty or invalid
       total: isNaN(parsedTotal) ? 0 : parsedTotal, // Save 0 if total is empty or invalid
@@ -113,18 +103,37 @@ const EditEntryInfoModal = ({
     return value.slice(0, -1);
   };
 
+  const deleteEntry = (id: string) => {
+    const invoiceToDelete = ref(
+      database,
+      `users/${currentUser?.uid}/clients/${userUID}/invoices/${invoiceUID}/entries/${id}`
+    );
+
+    remove(invoiceToDelete);
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4">Edit Entry</h2>
-
+        <div className="flex flex-row items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold">Edit Entry</h2>
+          <Button
+            variant={"destructive"}
+            onClick={() => {
+              deleteEntry(entry.id);
+              onClose();
+            }}
+          >
+            Delete
+          </Button>
+        </div>
         <div className="space-y-4">
           <div className="entry-fields-row-1 entry-group w-full flex flex-col">
             <Label htmlFor="invoice-entry-date">Date</Label>
             <Popover>
-              <PopoverTrigger asChild>
+              <PopoverTrigger asChild className="mt-2">
                 <Button
                   variant={"outline"}
                   className={cn(
@@ -139,9 +148,9 @@ const EditEntryInfoModal = ({
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
-                  selected={date ?? undefined} // Pass undefined if date is null
+                  selected={date ?? undefined}
                   onSelect={(newDate) => {
-                    setDate(newDate ?? null); // Set to null if newDate is undefined
+                    setDate(newDate ?? null);
                   }}
                   initialFocus
                 />
@@ -187,8 +196,8 @@ const EditEntryInfoModal = ({
                 <Input
                   id="invoice-entry-unit-type"
                   type="text"
-                  value={unitType ?? ""} // Use empty string if unitType is undefined
-                  onChange={(e) => setUnitType(e.target.value || undefined)} // Set to undefined if the value is empty
+                  value={unitType ?? ""}
+                  onChange={(e) => setUnitType(e.target.value || undefined)}
                   className="mt-2 focus:border-kelly-green"
                 />
               </div>
@@ -206,15 +215,14 @@ const EditEntryInfoModal = ({
               onChange={(e) => {
                 const validatedValue = validateNumericInput(e.target.value);
                 setTotal(validatedValue); // Allow only numeric characters
-                setIsTotalManuallySet(true); // Mark total as manually set
               }}
               className="w-36 mt-2 focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
         </div>
 
-        <div className="flex justify-end gap-4 mt-6">
-          <Button variant="outline" onClick={onClose}>
+        <div className="entry-fields-row-5 flex flex-col gap-2 md:gap-8 md:flex-row mt-6 justify-between">
+          <Button className="bg-gray-800" onClick={onClose}>
             Cancel
           </Button>
           <Button className="bg-kelly-green" onClick={handleSaveChanges}>

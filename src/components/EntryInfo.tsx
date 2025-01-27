@@ -106,10 +106,6 @@ const EntryInfo = (props: Props) => {
       `users/${currentUser?.uid}/clients/${userUID}/invoices/${invoiceUID}/entries`
     );
 
-    const unit = unitType.value
-      ? `${unitPrice}/${unitType.value}`
-      : `${unitPrice}`;
-
     if (dates && dates.length > 0) {
       // Create an entry for each selected date
       dates.forEach((date) => {
@@ -117,12 +113,13 @@ const EntryInfo = (props: Props) => {
           months[date.getUTCMonth()]
         } ${date.getUTCDate()}`;
 
+        console.log(unitType.value);
         push(entriesRef, {
           date: formattedDate,
           description: desc.value,
           total: total,
-          unitPrice: unit,
-          unitType: "",
+          unitPrice: unitPrice,
+          unitType: unitType.value,
           rawDate: date.toUTCString(), // Add rawDate in UTC format
         });
       });
@@ -131,8 +128,8 @@ const EntryInfo = (props: Props) => {
         date: "",
         description: desc.value,
         total: total,
-        unitPrice: unit,
-        unitType: "",
+        unitPrice: unitPrice,
+        unitType: unitType.value,
         rawDate: "",
       });
     }
@@ -144,103 +141,109 @@ const EntryInfo = (props: Props) => {
     <>
       <div
         id="create-client-form-container"
-        className="bg-black bg-opacity-60 client-info-container fixed flex flex-col justify-center items-center md:px-8 inset-x-0 inset-y-0 m-auto"
+        className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center"
       >
-        <div className="invoice-entry-form flex flex-col gap-8 justify-center items-center bg-white w-full md:w-fit h-full md:h-fit rounded-lg p-12">
-          <div className="entry-fields-row-1 entry-group w-full flex flex-col">
-            <Label htmlFor="invoice-entry-date">Date</Label>
-            <Popover>
-              <PopoverTrigger asChild className="mt-2">
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-[280px] justify-start text-left font-normal",
-                    !dates || dates.length === 0 ? "text-muted-foreground" : ""
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dates && dates.length > 0 ? (
-                    <span>
-                      {dates.length === 1
-                        ? format(dates[0], "PPP") // Show the selected date if only one is selected
-                        : `${dates.length} dates selected`}
-                    </span>
-                  ) : (
-                    <span>Select date(s)</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="multiple" // Enable multiple date selection
-                  selected={dates}
-                  onSelect={setDates}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="entry-fields-row-2 entry-group w-full flex flex-col">
-            <Label htmlFor="invoice-entry-desc">
-              Description <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              required
-              className="mt-2 focus:border-kelly-green"
-              name="invoice-entry-desc"
-              id="invoice-entry-desc"
-              cols={30}
-              rows={2}
-              onFocus={(e) => {
-                e.currentTarget.classList.remove("border-red-500");
-              }}
-            ></Textarea>
-          </div>
-          <div className="entry-fields-row-3 entry-group items-center w-full flex gap-4">
-            <div className="flex gap-8 items-center">
-              <div className="unit-group flex flex-col">
-                <Label htmlFor="invoice-entry-unit-price">
-                  Unit Price <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="invoice-entry-unit-price"
-                  required
-                  value={unitPrice}
-                  onChange={handleUnitPriceChange}
-                  className="mt-2 focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  onFocus={(e) => {
-                    e.currentTarget.classList.remove("border-red-500");
-                  }}
-                ></Input>
-              </div>
-              <span className=" mt-6">/</span>
-              <div className="unit-group flex flex-col">
-                <Label htmlFor="invoice-entry-unit-type">Unit Type</Label>
-                <Input
-                  id="invoice-entry-unit-type"
-                  type="text"
-                  className="mt-2  focus:border-kelly-green"
-                ></Input>
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+          <h2 className="text-2xl font-bold mb-4">Create Entry</h2>
+
+          <div className="space-y-4">
+            <div className="entry-fields-row-1 entry-group w-full flex flex-col">
+              <Label htmlFor="invoice-entry-date">Date</Label>
+              <Popover>
+                <PopoverTrigger asChild className="mt-2">
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-[280px] justify-start text-left font-normal",
+                      !dates || dates.length === 0
+                        ? "text-muted-foreground"
+                        : ""
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dates && dates.length > 0 ? (
+                      <span>
+                        {dates.length === 1
+                          ? format(dates[0], "PPP") // Show the selected date if only one is selected
+                          : `${dates.length} dates selected`}
+                      </span>
+                    ) : (
+                      <span>Select date(s)</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="multiple" // Enable multiple date selection
+                    selected={dates}
+                    onSelect={setDates}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="entry-fields-row-2 entry-group w-full flex flex-col">
+              <Label htmlFor="invoice-entry-desc">
+                Description <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                required
+                className="mt-2 focus:border-kelly-green"
+                name="invoice-entry-desc"
+                id="invoice-entry-desc"
+                cols={30}
+                rows={2}
+                onFocus={(e) => {
+                  e.currentTarget.classList.remove("border-red-500");
+                }}
+              ></Textarea>
+            </div>
+            <div className="entry-fields-row-3 entry-group items-center w-full flex gap-4">
+              <div className="flex gap-8 items-center">
+                <div className="unit-group flex flex-col">
+                  <Label htmlFor="invoice-entry-unit-price">
+                    Unit Price <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="invoice-entry-unit-price"
+                    required
+                    value={unitPrice}
+                    onChange={handleUnitPriceChange}
+                    className="mt-2 focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    onFocus={(e) => {
+                      e.currentTarget.classList.remove("border-red-500");
+                    }}
+                  ></Input>
+                </div>
+                <span className=" mt-6">/</span>
+                <div className="unit-group flex flex-col">
+                  <Label htmlFor="invoice-entry-unit-type">Unit Type</Label>
+                  <Input
+                    id="invoice-entry-unit-type"
+                    type="text"
+                    className="mt-2  focus:border-kelly-green"
+                  ></Input>
+                </div>
               </div>
             </div>
+            <div className="entry-fields-row-4 entry-group w-full flex flex-col">
+              <Label htmlFor="invoice-entry-total">
+                Total <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="invoice-entry-total"
+                required
+                type="number"
+                value={total}
+                onChange={handleTotalChange}
+                className="w-36 mt-2  focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                onFocus={(e) => {
+                  e.currentTarget.classList.remove("border-red-500");
+                }}
+              ></Input>
+            </div>
           </div>
-          <div className="entry-fields-row-4 entry-group w-full flex flex-col">
-            <Label htmlFor="invoice-entry-total">
-              Total <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="invoice-entry-total"
-              required
-              type="number"
-              value={total}
-              onChange={handleTotalChange}
-              className="w-36 mt-2  focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              onFocus={(e) => {
-                e.currentTarget.classList.remove("border-red-500");
-              }}
-            ></Input>
-          </div>
-          <div className="entry-fields-row-5 flex flex-col gap-8 md:flex-row">
+          <div className="entry-fields-row-5 flex flex-col gap-2 md:gap-8 md:flex-row mt-6 justify-between">
             <Button
               className="bg-gray-800"
               id="cancel-entry-btn"
