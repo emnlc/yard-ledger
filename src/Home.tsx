@@ -3,6 +3,7 @@ import { User } from "./hooks/User";
 import { database } from "./ts/firebase/auth";
 import { ref, onValue } from "firebase/database";
 import ClientInfo from "./components/ClientInfo";
+import EditClientInfoModal from "./components/EditClientInfoModal";
 import {
   Card,
   CardDescription,
@@ -18,51 +19,70 @@ interface Clients {
   id: string;
   name: string;
   address: string;
-  zip: number;
   lot?: number;
 }
 
 const Home = () => {
   const currentUser = User();
   const [clients, setClients] = useState<Clients[]>([]);
-  const [show, setShow] = useState(false);
+  const [filteredClients, setFilteredClients] = useState<Clients[]>([]);
+  const [showAddClient, setShowAddClient] = useState(false);
+  const [showEditClient, setShowEditClient] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Clients | null>(null);
   const [searchText, setSearchText] = useState<string>("");
 
-  const showForm = () => {
-    setShow(!show);
+  const fetchClients = () => {
+    const clientsRef = ref(database, `users/${currentUser?.uid}/clients/`);
+    onValue(clientsRef, (snapshot) => {
+      const clientsData: Clients[] = [];
+      snapshot.forEach((childSnapshot) => {
+        clientsData.push({
+          id: childSnapshot.key,
+          name: childSnapshot.val().clientName,
+          address: childSnapshot.val().clientAddress,
+          lot: childSnapshot.val().clientLot,
+        });
+      });
+
+      const sortedClients = clientsData.sort((a, b) => {
+        if (a.lot === undefined && b.lot === undefined) return 0;
+        if (a.lot === undefined) return 1;
+        if (b.lot === undefined) return -1;
+        return b.lot - a.lot;
+      });
+
+      setClients(sortedClients);
+      setFilteredClients(sortedClients);
+    });
   };
 
   useEffect(() => {
-    if (!searchText) {
-      const clientsRef = ref(database, `users/${currentUser?.uid}/clients/`);
-      onValue(clientsRef, (snapshot) => {
-        const clientsData: Clients[] = [];
-        snapshot.forEach((childSnapshot) => {
-          clientsData.push({
-            id: childSnapshot.key,
-            name: childSnapshot.val().clientName,
-            address: childSnapshot.val().clientAddress,
-            zip: childSnapshot.val().clientZip,
-            lot: childSnapshot.val().clientLot,
-          });
-        });
+    fetchClients();
+  }, []);
 
-        const sortedClients = clientsData.sort((a, b) => {
-          if (a.lot === undefined && b.lot === undefined) return 0;
-          if (a.lot === undefined) return 1;
-          if (b.lot === undefined) return -1;
-          return b.lot - a.lot;
-        });
+  const handleSearch = (query: string) => {
+    setSearchText(query);
 
-        setClients(sortedClients);
-      });
-    } else {
-      const filteredClients = clients.filter((client) =>
-        client.name.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setClients(filteredClients);
-    }
-  }, [searchText]);
+    const lowerCaseQuery = query.toLowerCase();
+    const filtered = clients.filter(
+      (client) =>
+        client.name.toLowerCase().includes(lowerCaseQuery) ||
+        client.address.toLowerCase().includes(lowerCaseQuery) ||
+        (client.lot !== undefined &&
+          client.lot.toString().includes(lowerCaseQuery))
+    );
+
+    setFilteredClients(filtered);
+  };
+
+  const handleEditClick = (client: Clients) => {
+    setSelectedClient(client);
+    setShowEditClient(true);
+  };
+
+  const handleUpdate = () => {
+    fetchClients();
+  };
 
   return (
     <>
@@ -78,10 +98,12 @@ const Home = () => {
           <div className="row-start-4">
             <Button
               id="newClientBtn"
-              className="bg-kelly-green font-bold"
-              onClick={showForm}
+              className="bg-kelly-green"
+              onClick={() => {
+                setShowAddClient(!showAddClient);
+              }}
             >
-              Add Client
+              New Client
             </Button>
           </div>
         </div>
@@ -92,14 +114,14 @@ const Home = () => {
         >
           <Input
             type="text"
-            id="client-name"
+            id="client-search"
             className="focus:border-kelly-green md:place-self-start md:w-80 md:h-10 md:col-span-3 xl:col-span-4 2xl:col-span-5"
-            placeholder="Search by name"
-            defaultValue={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="Search by name, address, or lot"
+            value={searchText}
+            onChange={(e) => handleSearch(e.target.value)}
           ></Input>
 
-          {clients.map((client) => (
+          {filteredClients.map((client) => (
             <Card key={client.id}>
               <CardHeader>
                 <CardTitle className="line-clamp-1">{client.name}</CardTitle>
@@ -110,12 +132,9 @@ const Home = () => {
                 </CardDescription>
               </CardHeader>
               <CardFooter className="justify-between">
-                {/* TODO: edit modal for client info */}
                 <button
                   className="text-lg"
-                  onClick={() => {
-                    console.log("edit");
-                  }}
+                  onClick={() => handleEditClick(client)}
                 >
                   <i className="fa-regular fa-pen-to-square text-green-500"></i>
                 </button>
@@ -130,7 +149,16 @@ const Home = () => {
           ))}
         </div>
       </div>
-      {show ? <ClientInfo show={show} setShow={setShow}></ClientInfo> : null}
+      {showAddClient && (
+        <ClientInfo show={showAddClient} setShow={setShowAddClient} />
+      )}
+      {showEditClient && selectedClient && (
+        <EditClientInfoModal
+          client={selectedClient}
+          setShow={setShowEditClient}
+          onUpdate={handleUpdate}
+        />
+      )}
     </>
   );
 };

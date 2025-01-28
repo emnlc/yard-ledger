@@ -107,7 +107,7 @@ const ClientInvoice = () => {
         </div>
 
         <Button
-          className="bg-kelly-green font-bold self-center md:self-start"
+          className="bg-kelly-green self-center md:self-start"
           id="new-invoice-btn"
           onClick={showForm}
         >

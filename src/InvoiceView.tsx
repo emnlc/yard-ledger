@@ -286,10 +286,10 @@ const InvoiceView = () => {
             <div className="flex gap-4 self-center md:self-start">
               <Button
                 id="new-invoice-btn"
-                className="bg-kelly-green hover:opacity-80 transition-all font-bold"
+                className="bg-kelly-green hover:opacity-80 transition-all"
                 onClick={showEntryForm}
               >
-                New Line
+                New Entry
               </Button>
 
               {user && (
@@ -306,17 +306,11 @@ const InvoiceView = () => {
                 >
                   {({ loading }) =>
                     loading ? (
-                      <Button
-                        id="generate-pdf-btn"
-                        className="bg-blue-400 font-bold"
-                      >
+                      <Button id="generate-pdf-btn" className="bg-blue-400 ">
                         Loading ...
                       </Button>
                     ) : (
-                      <Button
-                        id="generate-pdf-btn"
-                        className="bg-blue-400 font-bold"
-                      >
+                      <Button id="generate-pdf-btn" className="bg-blue-400">
                         Generate
                       </Button>
                     )

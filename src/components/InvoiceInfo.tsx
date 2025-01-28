@@ -214,7 +214,7 @@ const InvoiceInfo = (props: Props) => {
 
           <div className="button-create-container flex flex-row justify-between">
             <Button
-              className="bg-gray-800 self-center font-bold"
+              className="bg-gray-800 self-center"
               id="create-client-btn"
               onClick={changeShow}
             >
@@ -222,7 +222,7 @@ const InvoiceInfo = (props: Props) => {
             </Button>
 
             <Button
-              className="bg-kelly-green self-center font-bold"
+              className="bg-kelly-green self-center"
               id="create-client-btn"
               onClick={createInvoice}
             >

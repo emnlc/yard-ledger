@@ -170,7 +170,6 @@ const EditInvoiceInfoModal = ({
           <h2 className="text-2xl font-bold ">Edit Invoice</h2>
           <Button
             size={"sm"}
-            className="text-xs"
             variant={"destructive"}
             onClick={() => {
               deleteInvoice(invoice.id);
@@ -237,15 +236,12 @@ const EditInvoiceInfoModal = ({
         </div>
 
         <div className="button-create-container flex flex-row justify-between">
-          <Button
-            className="bg-gray-800 self-center font-bold"
-            onClick={onClose}
-          >
+          <Button className="bg-gray-800 self-center" onClick={onClose}>
             Cancel
           </Button>
 
           <Button
-            className="bg-kelly-green self-center font-bold"
+            className="bg-kelly-green self-center"
             onClick={handleSaveChanges}
           >
             Save Changes
