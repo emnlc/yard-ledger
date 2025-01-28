@@ -2,12 +2,10 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { User } from "./hooks/User";
 import { database } from "./ts/firebase/auth";
-import { onValue, ref, remove } from "firebase/database";
+import { onValue, ref } from "firebase/database";
 import { Link } from "react-router-dom";
-
-// import Button from "./components/Button";
 import InvoiceInfo from "./components/InvoiceInfo";
-
+import EditInvoiceInfoModal from "./components/EditInvoiceInfoModal";
 import {
   Table,
   TableBody,
@@ -40,16 +38,11 @@ const ClientInvoice = () => {
   const [clientInfo, setClientInfo] = useState<Client>();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
   const showForm = () => {
     setShow(!show);
-  };
-
-  const deleteInvoice = (id: string) => {
-    const targetInvoice = ref(
-      database,
-      `users/${currentUser?.uid}/clients/${userUID}/invoices/${id}`
-    );
-    remove(targetInvoice);
   };
 
   const clientRef = ref(
@@ -114,7 +107,7 @@ const ClientInvoice = () => {
         </div>
 
         <Button
-          className="bg-kelly-green font-bold self-center md:self-start"
+          className="bg-kelly-green self-center md:self-start"
           id="new-invoice-btn"
           onClick={showForm}
         >
@@ -142,16 +135,8 @@ const ClientInvoice = () => {
                       <button
                         className="text-lg"
                         onClick={() => {
-                          deleteInvoice(entry.id);
-                          console.log("delete");
-                        }}
-                      >
-                        <i className="fa-regular fa-trash-can text-red-500"></i>
-                      </button>
-                      <button
-                        className="text-lg"
-                        onClick={() => {
-                          console.log("edit");
+                          setSelectedInvoice(entry); // Set the selected invoice
+                          setIsEditModalOpen(true); // Open the modal
                         }}
                       >
                         <i className="fa-regular fa-pen-to-square text-green-500"></i>
@@ -175,55 +160,19 @@ const ClientInvoice = () => {
               })}
           </TableBody>
         </Table>
-
-        {/* mobile / small device */}
-
-        {/* <div id="mobile-invoice-view" className="flex flex-col gap-8 md:hidden">
-          <Button
-            className="bg-kelly-green self-center"
-            id="new-invoice-btn"
-            onClick={showForm}
-          >
-            New Invoice
-          </Button>
-
-          <div className="clients-body gap-x-8 gap-y-8 grid mx-2 content-center sm:grid-cols-2">
-            {invoices.map((entry) => {
-              return (
-                <div
-                  key={entry.id}
-                  className="invoice-card bg-white border text-base flex flex-col gap-4 overflow-hidden w-full rounded-lg shadow-lg p-4"
-                >
-                  <div id="invoice-line-1" className=" flex  w-full">
-                    <p className="flex font-bold">Invoice #{entry.number}</p>
-                  </div>
-                  <div
-                    id="invoice-line-2"
-                    className="flex w-full justify-between"
-                  >
-                    <p>
-                      {entry.month}, {entry.year}
-                    </p>
-                    <Link
-                      to={`/home/client-invoice/${userUID}/${entry.id}`}
-                      className="font-bold text-blue-500 hover:underline"
-                    >
-                      View
-                    </Link>
-                  </div>
-                  <div id="invoice-line-3" className="flex w-full">
-                    <span className={getSpan(entry.status)}>
-                      {entry.status}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div> */}
       </div>
 
+      {/* modal */}
       {show ? <InvoiceInfo show={show} setShow={setShow}></InvoiceInfo> : null}
+
+      {isEditModalOpen && selectedInvoice && userUID && (
+        <EditInvoiceInfoModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          invoice={selectedInvoice}
+          userUID={userUID}
+        />
+      )}
     </>
   );
 };

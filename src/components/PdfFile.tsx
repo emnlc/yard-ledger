@@ -19,6 +19,7 @@ interface Entry {
   date: string;
   desc: string;
   unitPrice?: number;
+  unitType?: string;
   total: number;
   id: string;
 }
@@ -350,7 +351,12 @@ const PdfFile = ({
                     <Text>{entry.desc}</Text>
                   </View>
                   <View style={styles.td3}>
-                    <Text>${entry.unitPrice}</Text>
+                    <Text>
+                      $
+                      {entry.unitType
+                        ? `${entry.unitPrice} / ${entry.unitType}`
+                        : entry.unitPrice}
+                    </Text>
                   </View>
                   <View style={styles.td4}>
                     <Text>${entry.total}</Text>
