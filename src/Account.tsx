@@ -33,6 +33,10 @@ const Account = () => {
   const [user, setUser] = useState<User>();
 
   useEffect(() => {
+    document.title = "Account";
+  });
+
+  useEffect(() => {
     const unsubscribe = onValue(
       ref(database, `users/${currentUser?.uid}`),
       (snapshot) => {

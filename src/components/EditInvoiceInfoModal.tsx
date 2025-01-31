@@ -181,9 +181,9 @@ const EditInvoiceInfoModal = ({
         </div>
         <div className="space-y-4">
           <div className="flex justify-between flex-col md:flex-row items-center gap-4">
-            <Label htmlFor="invoice-number">Invoice Number</Label>
+            <Label htmlFor="edit-invoice-number">Invoice Number</Label>
             <Input
-              id="number"
+              id="edit-invoice-number"
               type="number"
               value={invoiceNumber}
               onChange={handleInvoiceNumberChange}

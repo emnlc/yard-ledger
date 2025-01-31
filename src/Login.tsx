@@ -16,6 +16,10 @@ import { Input } from "@/components/ui/input";
 const Login = () => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.title = "Login";
+  });
+
   const login = () => {
     let isValid = true; // flag to track validity
     const email = (
@@ -117,7 +121,7 @@ const Login = () => {
     <>
       <div className="md:h-screen flex flex-col gap-4 justify-center items-center">
         <div className="login-container flex flex-col justify-center items-center md:mx-auto w-full md:w-fit px-12 py-8 gap-8 md:shadow-lg">
-          <h1 className="font-extrabold text-2xl self-start">Sign In</h1>
+          <h1 className="font-bold text-2xl self-start">Login</h1>
 
           <div className="input-field w-full flex flex-col">
             <Label htmlFor="email-input-login" className="text-base">

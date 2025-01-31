@@ -31,8 +31,13 @@ const Home = () => {
   const [selectedClient, setSelectedClient] = useState<Clients | null>(null);
   const [searchText, setSearchText] = useState<string>("");
 
+  useEffect(() => {
+    document.title = "Clients";
+  });
+
   const fetchClients = () => {
     const clientsRef = ref(database, `users/${currentUser?.uid}/clients/`);
+
     onValue(clientsRef, (snapshot) => {
       const clientsData: Clients[] = [];
       snapshot.forEach((childSnapshot) => {
@@ -91,7 +96,7 @@ const Home = () => {
         className="md:container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto"
       >
         <div className="clients-header gap-8 h-60 md:h-96 flex flex-col justify-end items-center md:justify-end md:items-start">
-          <h1 id="title" className="text-5xl font-extrabold row-start-3">
+          <h1 id="title" className="text-5xl font-bold row-start-3">
             Clients
           </h1>
 

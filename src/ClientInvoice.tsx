@@ -41,6 +41,10 @@ const ClientInvoice = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
+  useEffect(() => {
+    document.title = `${clientInfo ? clientInfo.name : "Invoices"}`;
+  });
+
   const showForm = () => {
     setShow(!show);
   };
@@ -89,21 +93,17 @@ const ClientInvoice = () => {
         className="md:container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto"
       >
         <div className="invoice-header gap-2 h-60 md:h-96 flex flex-col justify-end items-center md:justify-end md:items-start">
-          <h1
-            id="title"
-            className="text-center text-5xl font-extrabold row-start-3"
-          >
+          <h1 id="title" className="text-center text-5xl font-bold row-start-3">
             {clientInfo?.name}{" "}
           </h1>
-          <h2 className="text-center md:text-start text-2xl font-semibold">
+          <div className="text-center flex flex-col md:text-start text-2xl font-semibold">
+            <h2>{clientInfo?.address}</h2>
             {clientInfo?.lot ? (
               <>
-                Lot #{clientInfo.lot} <br />
+                <h2>Lot #{clientInfo.lot}</h2>
               </>
             ) : null}
-
-            {clientInfo?.address}
-          </h2>
+          </div>
         </div>
 
         <Button

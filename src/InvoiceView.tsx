@@ -160,6 +160,12 @@ const InvoiceView = () => {
   };
 
   useEffect(() => {
+    document.title = `${
+      client && invoice ? `${client.name} ${invoice.month}` : "Yard Ledger"
+    }`;
+  }, [client]);
+
+  useEffect(() => {
     onValue(invoiceRef, (snapshot) => {
       const data = snapshot.val();
       setInvoice({
@@ -275,12 +281,15 @@ const InvoiceView = () => {
         {invoice && client && (
           <>
             <div className="invoice-entries-header gap-4 h-60 md:h-96 flex flex-col justify-end items-center md:justify-end md:items-start">
-              <h1 className="text-center text-5xl font-extrabold ">
+              <h1 className="text-center text-5xl font-bold ">
                 Invoice #{invoice.number}
               </h1>
-              <h1 className="text-center text-xl font-extrabold">
-                {invoice.month}, {invoice.year}
-              </h1>
+              <div className="flex flex-col gap-">
+                <h1 className="text-2xl font-medium">{client.name}</h1>
+                <h1 className="text-2xl font-medium">
+                  {invoice.month}, {invoice.year}
+                </h1>
+              </div>
             </div>
 
             <div className="flex gap-4 self-center md:self-start">
@@ -302,7 +311,7 @@ const InvoiceView = () => {
                       user={user}
                     />
                   }
-                  fileName="invoice"
+                  fileName={`${client.name} ${invoice.month} ${invoice.year} Invoice`}
                 >
                   {({ loading }) =>
                     loading ? (
