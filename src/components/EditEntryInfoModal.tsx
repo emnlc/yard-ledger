@@ -131,10 +131,11 @@ const EditEntryInfoModal = ({
         </div>
         <div className="space-y-4">
           <div className="entry-fields-row-1 entry-group w-full flex flex-col">
-            <Label htmlFor="invoice-entry-date">Date</Label>
+            <Label htmlFor="edit-invoice-entry-date">Date</Label>
             <Popover>
               <PopoverTrigger asChild className="mt-2">
                 <Button
+                  id="edit-invoice-entry-date"
                   variant={"outline"}
                   className={cn(
                     "w-[280px] justify-start text-left font-normal",

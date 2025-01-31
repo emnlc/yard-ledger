@@ -22,6 +22,10 @@ const Join = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    document.title = "Join";
+  });
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         navigate("/home");
@@ -124,7 +128,7 @@ const Join = () => {
     <>
       <div className="md:h-screen flex flex-col gap-4 justify-center items-center">
         <div className="join-container flex flex-col justify-center items-center md:mx-auto w-full md:w-fit px-12 py-8 gap-8 md:shadow-lg">
-          <h1 className="font-extrabold text-2xl self-start">Join</h1>
+          <h1 className="font-bold text-2xl self-start">Join</h1>
 
           <div className="input-container flex flex-col justify-center items-center w-full gap-4">
             <div className="input-field w-full flex flex-col">
