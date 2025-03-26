@@ -252,7 +252,11 @@ const Login = () => {
           </Button>
         </div>
         <p className="text-sm">
-          New to Yard Ledger?{" "}
+          New to{" "}
+          <Link to={"/"} className="hover:text-kelly-green transition-all">
+            Yard Ledger
+          </Link>
+          ?{" "}
           <Link className="text-blue-500 hover:underline" to={"/join"}>
             Join now
           </Link>

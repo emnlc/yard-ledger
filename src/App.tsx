@@ -8,11 +8,14 @@ import ClientInvoice from "./ClientInvoice";
 import InvoiceView from "./InvoiceView";
 import Account from "./Account";
 
+import Landing from "./Landing/Landing";
+
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/join" element={<Join />} />
         <Route
           path="/home"

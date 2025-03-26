@@ -311,7 +311,7 @@ const InvoiceView = () => {
                       user={user}
                     />
                   }
-                  fileName={`${client.name} ${invoice.month} ${invoice.year} Invoice`}
+                  fileName={`${client.name} ${invoice.month} ${invoice.year} Invoice.pdf`}
                 >
                   {({ loading }) =>
                     loading ? (

@@ -226,8 +226,12 @@ const Join = () => {
           </div>
         </div>
         <p className=" text-sm">
-          Already on Yard Ledger?{" "}
-          <Link className="text-blue-500 hover:underline" to={"/"}>
+          Already on{" "}
+          <Link to={"/"} className="hover:text-kelly-green transition-all">
+            Yard Ledger
+          </Link>
+          ?{" "}
+          <Link className="text-blue-500 hover:underline" to={"/login"}>
             Login
           </Link>
         </p>
