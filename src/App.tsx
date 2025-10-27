@@ -10,47 +10,51 @@ import Account from "./Account";
 
 import Landing from "./Landing/Landing";
 
+import { ThemeProvider } from "./components/theme-provider";
+
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/join" element={<Join />} />
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/account"
-          element={
-            <ProtectedRoute>
-              <Account />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={"/home/client-invoice/:userUID"}
-          element={
-            <ProtectedRoute>
-              <ClientInvoice />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={"/home/client-invoice/:userUID/:invoiceUID"}
-          element={
-            <ProtectedRoute>
-              <InvoiceView></InvoiceView>
-            </ProtectedRoute>
-          }
-        ></Route>
-      </Routes>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/join" element={<Join />} />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <Account />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={"/home/client-invoice/:userUID"}
+            element={
+              <ProtectedRoute>
+                <ClientInvoice />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={"/home/client-invoice/:userUID/:invoiceUID"}
+            element={
+              <ProtectedRoute>
+                <InvoiceView></InvoiceView>
+              </ProtectedRoute>
+            }
+          ></Route>
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }
 

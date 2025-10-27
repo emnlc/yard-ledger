@@ -1,24 +1,10 @@
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import { auth, database, signInWithGoogle } from "@/ts/firebase/auth";
+import { database, signInWithGoogle } from "@/ts/firebase/auth";
 import { ref, update } from "firebase/database";
-import { useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
 
 const Hero = () => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        navigate("/home");
-      }
-    });
-
-    return unsubscribe;
-  }, [navigate]);
-
   const googleSignIn = () => {
     signInWithGoogle()
       .then((result) => {
@@ -38,7 +24,7 @@ const Hero = () => {
       <h1 className="text-4xl md:text-6xl font-bold md:max-w-2xl">
         Hassle-Free Invoicing Starts Here
       </h1>
-      <p className="md:text-xl text-neutral-700 font-medium md:max-w-xl">
+      <p className="md:text-xl text-muted-foreground font-medium md:max-w-xl">
         Create and send clean, professional invoices in seconds. No stress, just
         efficiency.
       </p>

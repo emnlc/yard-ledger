@@ -1,21 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { User } from "./hooks/User";
 import { onValue, ref, update } from "firebase/database";
 import { database } from "./ts/firebase/auth";
-
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Label } from "./components/ui/label";
 
-interface User {
+interface UserData {
   name: string;
   email: string;
   company: string;
@@ -23,209 +22,263 @@ interface User {
   city: string;
   state: string;
   zip: string;
-  phone: number;
+  phone: string;
   a: string;
   r: string;
 }
 
 const Account = () => {
   const currentUser = User();
-  const [user, setUser] = useState<User>();
+  const [user, setUser] = useState<UserData | null>(null);
+  const [formData, setFormData] = useState<Partial<UserData>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
+  // Set document title
   useEffect(() => {
     document.title = "Account";
-  });
+  }, []);
 
+  // Load user data
   useEffect(() => {
+    if (!currentUser?.uid) return;
+
     const unsubscribe = onValue(
-      ref(database, `users/${currentUser?.uid}`),
+      ref(database, `users/${currentUser.uid}`),
       (snapshot) => {
         const data = snapshot.val();
-        setUser({
-          name: data.name,
-          email: data.email,
-          company: data.company,
-          address: data.address,
-          city: data.city,
-          state: data.state,
-          zip: data.zip,
-          phone: data.phone,
-          a: data.a,
-          r: data.r,
-        });
+        if (data) {
+          const userData: UserData = {
+            name: data.name || "",
+            email: data.email || "",
+            company: data.company || "",
+            address: data.address || "",
+            city: data.city || "",
+            state: data.state || "",
+            zip: data.zip || "",
+            phone: data.phone || "",
+            a: data.a || "",
+            r: data.r || "",
+          };
+          setUser(userData);
+          setFormData(userData);
+        }
       }
     );
 
-    return unsubscribe;
-  }, [user]);
+    return () => unsubscribe();
+  }, [currentUser?.uid]);
 
-  const updateDetails = async () => {
-    const company = (
-      document.getElementById("account-company") as HTMLInputElement
-    ).value;
-    const address = (
-      document.getElementById("account-address") as HTMLInputElement
-    ).value;
-    const city = (document.getElementById("account-city") as HTMLInputElement)
-      .value;
-    const state = (document.getElementById("account-state") as HTMLInputElement)
-      .value;
-    const zip = (document.getElementById("account-zip") as HTMLInputElement)
-      .value;
-    const phone = (document.getElementById("account-phone") as HTMLInputElement)
-      .value;
-
-    const a = (document.getElementById("account-a") as HTMLInputElement).value;
-    const r = (document.getElementById("account-r") as HTMLInputElement).value;
-
-    update(ref(database, `users/${currentUser?.uid}`), {
-      company: company,
-      address: address,
-      city: city,
-      state: state,
-      zip: zip,
-      phone: phone,
-      a: a,
-      r: r,
-    });
+  // Handle input change
+  const handleChange = (field: keyof UserData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setHasChanges(true);
   };
 
+  // Handle form submission
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!currentUser?.uid) {
+      console.error("Current user is missing.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await update(ref(database, `users/${currentUser.uid}`), {
+        company: formData.company?.trim() || "",
+        address: formData.address?.trim() || "",
+        city: formData.city?.trim() || "",
+        state: formData.state?.trim().toUpperCase() || "",
+        zip: formData.zip?.trim() || "",
+        phone: formData.phone?.trim() || "",
+        a: formData.a?.trim() || "",
+        r: formData.r?.trim() || "",
+      });
+
+      setHasChanges(false);
+      // You could add a success toast notification here
+    } catch (error) {
+      console.error("Error updating account details:", error);
+      // You could add an error toast notification here
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-muted-foreground">Loading account details...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="md:container mx-auto h-screen mb-24 flex flex-col justify-center items-center">
-      {user && (
-        <>
-          <Card className="flex  mt-24 flex-col w-fit border-none md:border md:border-solid">
-            <CardHeader className="flex items-center md:items-start mb-4">
-              <CardTitle className=" text-3xl font-bold">
-                {" "}
-                Account Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-8 w-fit items-center md:items-start">
-              <div className="detail-row flex flex-col md:flex-row gap-4 md:gap-16">
-                <div className="detail-field">
-                  <Label htmlFor="account-name">Name</Label>
-                  <Input
-                    disabled
-                    id="account-name"
-                    type="text"
-                    className="mt-2 w-64"
-                    defaultValue={user.name}
-                  ></Input>
-                </div>
-                <div className="detail-field">
-                  <Label htmlFor="account-email">Email</Label>
-                  <Input
-                    disabled
-                    id="account-email"
-                    type="text"
-                    className="mt-2 w-64"
-                    defaultValue={user.email}
-                  ></Input>
-                </div>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <form onSubmit={handleSubmit}>
+        <Card className="my-auto">
+          <CardHeader>
+            <CardTitle className="text-3xl">Account Details</CardTitle>
+            <CardDescription>
+              Manage your account information and business details
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            {/* Name and Email (Read-only) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="account-name">Name</Label>
+                <Input
+                  id="account-name"
+                  type="text"
+                  value={user.name}
+                  disabled
+                  className="bg-muted"
+                />
               </div>
-
-              <div className="detail-row flex flex-col md:flex-row gap-4 md:gap-16">
-                <div className="detail-field">
-                  <Label htmlFor="account-address">Address</Label>
-                  <Input
-                    id="account-address"
-                    type="text"
-                    className="mt-2 w-64"
-                    defaultValue={user.address}
-                  ></Input>
-                </div>
-
-                <div className="detail-field">
-                  <Label htmlFor="account-zip">Zip Code</Label>
-                  <Input
-                    id="account-zip"
-                    type="number"
-                    className="mt-2 w-32"
-                    defaultValue={user.zip}
-                  ></Input>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="account-email">Email</Label>
+                <Input
+                  id="account-email"
+                  type="email"
+                  value={user.email}
+                  disabled
+                  className="bg-muted"
+                />
               </div>
+            </div>
 
-              <div className="detail-row flex flex-col md:flex-row gap-4 md:gap-16">
-                <div className="detail-field">
-                  <Label htmlFor="account-city">City</Label>
-                  <Input
-                    id="account-city"
-                    type="text"
-                    className="mt-2 w-64"
-                    defaultValue={user.city}
-                  ></Input>
-                </div>
-
-                <div className="detail-field">
-                  <Label htmlFor="account-state">State</Label>
-                  <Input
-                    id="account-state"
-                    type="text"
-                    className="mt-2 w-32"
-                    defaultValue={user.state}
-                    maxLength={2}
-                  ></Input>
-                </div>
+            {/* Company and Phone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="account-company">Company Name</Label>
+                <Input
+                  id="account-company"
+                  type="text"
+                  value={formData.company}
+                  onChange={(e) => handleChange("company", e.target.value)}
+                  placeholder="Your Company LLC"
+                  disabled={isSubmitting}
+                />
               </div>
-
-              <div className="detail-row flex flex-col md:flex-row gap-4 md:gap-16">
-                <div className="detail-field">
-                  <Label htmlFor="account-company">Company</Label>
-                  <Input
-                    id="account-company"
-                    type="text"
-                    className="mt-2 w-64"
-                    defaultValue={user.company}
-                  ></Input>
-                </div>
-                <div className="detail-field">
-                  <Label htmlFor="account-phone">Phone Number</Label>
-                  <Input
-                    id="account-phone"
-                    type="text"
-                    className="mt-2 w-64"
-                    defaultValue={user.phone}
-                  ></Input>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="account-phone">Phone Number</Label>
+                <Input
+                  id="account-phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleChange("phone", e.target.value)}
+                  placeholder="(555) 123-4567"
+                  disabled={isSubmitting}
+                />
               </div>
+            </div>
 
-              <div className="detail-row flex flex-col md:flex-row gap-4 md:gap-16">
-                <div className="detail-field">
-                  <Label htmlFor="account-a">Account #</Label>
+            {/* Address */}
+            <div className="space-y-2">
+              <Label htmlFor="account-address">Street Address</Label>
+              <Input
+                id="account-address"
+                type="text"
+                value={formData.address}
+                onChange={(e) => handleChange("address", e.target.value)}
+                placeholder="123 Main St"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {/* City, State, and Zip */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2 md:col-span-1">
+                <Label htmlFor="account-city">City</Label>
+                <Input
+                  id="account-city"
+                  type="text"
+                  value={formData.city}
+                  onChange={(e) => handleChange("city", e.target.value)}
+                  placeholder="Phoenix"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="account-state">State</Label>
+                <Input
+                  id="account-state"
+                  type="text"
+                  value={formData.state}
+                  onChange={(e) => handleChange("state", e.target.value)}
+                  placeholder="AZ"
+                  maxLength={2}
+                  disabled={isSubmitting}
+                  className="uppercase"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="account-zip">Zip Code</Label>
+                <Input
+                  id="account-zip"
+                  type="text"
+                  value={formData.zip}
+                  onChange={(e) => handleChange("zip", e.target.value)}
+                  placeholder="85001"
+                  maxLength={5}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            {/* Banking Information */}
+            <div className="pt-4 border-t border-border">
+              <h3 className="text-lg font-semibold mb-4">
+                Banking Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="account-a">Account Number</Label>
                   <Input
                     id="account-a"
                     type="text"
-                    className="mt-2 w-64"
-                    defaultValue={user.a}
-                  ></Input>
+                    value={formData.a}
+                    onChange={(e) => handleChange("a", e.target.value)}
+                    placeholder="XXXXXXXXXX"
+                    disabled={isSubmitting}
+                  />
                 </div>
-                <div className="detail-field">
-                  <Label htmlFor="account-r">Routing #</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="account-r">Routing Number</Label>
                   <Input
                     id="account-r"
                     type="text"
-                    className="mt-2 w-64"
-                    defaultValue={user.r}
-                  ></Input>
+                    value={formData.r}
+                    onChange={(e) => handleChange("r", e.target.value)}
+                    placeholder="XXXXXXXXX"
+                    maxLength={9}
+                    disabled={isSubmitting}
+                  />
                 </div>
               </div>
-            </CardContent>
+            </div>
+          </CardContent>
 
-            <CardFooter className="mt-4 justify-center items-center">
-              <Button
-                id="save-account-details-btn"
-                size={"lg"}
-                className="bg-kelly-green transition-all hover:opacity-90"
-                onClick={updateDetails}
-              >
-                Save
-              </Button>
-            </CardFooter>
-          </Card>
-        </>
-      )}
+          <CardFooter className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">
+              {hasChanges ? "You have unsaved changes" : "All changes saved"}
+            </p>
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isSubmitting || !hasChanges}
+              className="bg-primary hover:opacity-90 transition-opacity"
+            >
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
+          </CardFooter>
+        </Card>
+      </form>
     </div>
   );
 };

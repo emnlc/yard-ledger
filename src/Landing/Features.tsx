@@ -17,8 +17,19 @@ const Features = () => {
             </div>
           </div>
 
-          <div className="flex-1">
-            <img className="px-4 md:px-0" src="clients.png" alt="" />
+          <div className="flex-1 aspect-video border border-muted">
+            {/* Light mode image */}
+            <img
+              className="px-4 md:px-0 block dark:hidden"
+              src="clients.avif"
+              alt="Client management "
+            />
+            {/* Dark mode image */}
+            <img
+              className="px-4 md:px-0 hidden dark:block"
+              src="clients-dark.avif"
+              alt="Client management "
+            />
           </div>
         </section>
 
@@ -33,8 +44,17 @@ const Features = () => {
             </div>
           </div>
 
-          <div className="flex-1">
-            <img className="px-4 md:px-0" src="monthly.png" alt="" />
+          <div className="flex-1 aspect-video border border-muted">
+            <img
+              className="px-4 md:px-0 block dark:hidden"
+              src="monthly.avif"
+              alt="Invoice creation (light)"
+            />
+            <img
+              className="px-4 md:px-0 hidden dark:block"
+              src="monthly-dark.avif"
+              alt="Invoice creation (dark)"
+            />
           </div>
         </section>
 

@@ -2,7 +2,7 @@ import { User } from "../hooks/User";
 import { useParams } from "react-router-dom";
 import { database } from "../ts/firebase/auth";
 import { push, ref } from "firebase/database";
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -20,218 +20,268 @@ interface Props {
   setShow: (show: boolean) => void;
 }
 
-const InvoiceInfo = (props: Props) => {
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const InvoiceInfo = ({ show, setShow }: Props) => {
   const currentUser = User();
   const { userUID } = useParams();
 
-  const changeShow = () => {
-    props.setShow(!props.show);
-  };
-
-  // Initialize date state with the current month and year
+  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [date, setDate] = useState<Date>(() => {
     const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1); // First day of the current month
+    return new Date(today.getFullYear(), today.getMonth(), 1);
   });
-
-  // State for the selected year
   const [selectedYear, setSelectedYear] = useState<number>(
     new Date().getFullYear()
   );
 
-  // State to control the open/close state of the month and year pickers
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
   const [isYearPickerOpen, setIsYearPickerOpen] = useState(false);
+  const [errors, setErrors] = useState({
+    invoiceNumber: false,
+    date: false,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Generate a range of years (2 years before and after the current year)
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 3 }, (_, i) => currentYear - 1 + i);
+  const years = Array.from({ length: 6 }, (_, i) => currentYear - 4 + i);
 
-  const createInvoice = () => {
-    const invoiceInput = document.getElementById(
-      "invoice-number"
-    ) as HTMLInputElement;
+  // Validate form
+  const validateForm = () => {
+    const newErrors = {
+      invoiceNumber: !invoiceNumber.trim(),
+      date: !date,
+    };
+    setErrors(newErrors);
+    return !newErrors.invoiceNumber && !newErrors.date;
+  };
 
-    let validationCheck = true;
-    if (!invoiceInput.value) {
-      invoiceInput.classList.add("border-red-500");
-      validationCheck = false;
+  // Handle submit
+  const handleSubmit = async (e?: FormEvent) => {
+    e?.preventDefault();
+
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      const clientInvoiceList = ref(
+        database,
+        `users/${currentUser?.uid}/clients/${userUID}/invoices`
+      );
+
+      const selectedMonth = MONTHS[date.getMonth()];
+      const selectedYear = date.getFullYear();
+      const rawDate = new Date(selectedYear, date.getMonth(), 1);
+
+      await push(clientInvoiceList, {
+        invoiceNumber: parseInt(invoiceNumber.trim()),
+        invoiceMonth: selectedMonth,
+        invoiceYear: selectedYear,
+        rawDate: rawDate.toISOString(),
+        invoiceStatus: "Incomplete",
+        invoiceSubtotal: 0,
+        invoiceFinalTotal: 0,
+        invoiceSalesTax: 0,
+        applySales: false,
+      });
+
+      setInvoiceNumber("");
+      setDate(new Date(currentYear, new Date().getMonth(), 1));
+      setErrors({ invoiceNumber: false, date: false });
+      setShow(false);
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+    } finally {
+      setIsSubmitting(false);
     }
-    if (!date) {
-      validationCheck = false;
+  };
+
+  const handleClose = () => {
+    if (!isSubmitting) {
+      setInvoiceNumber("");
+      setErrors({ invoiceNumber: false, date: false });
+      setShow(false);
     }
-
-    if (!validationCheck) return;
-
-    const clientInvoiceList = ref(
-      database,
-      `users/${currentUser?.uid}/clients/${userUID}/invoices`
-    );
-
-    const selectedMonth = months[date.getMonth()];
-    const selectedYear = date.getFullYear();
-
-    // Create a new Date object for the selected month and year
-    const rawDate = new Date(selectedYear, date.getMonth(), 1);
-
-    push(clientInvoiceList, {
-      invoiceNumber: invoiceInput.value,
-      invoiceMonth: selectedMonth,
-      invoiceYear: selectedYear,
-      rawDate: rawDate.toUTCString(),
-      invoiceStatus: "Incomplete",
-      invoiceSubtotal: 0,
-      invoiceTotal: 0,
-      invoiceSalesTax: 0,
-      applySales: false,
-    });
-
-    changeShow();
   };
 
-  // Custom Month Picker
-  const renderMonthPicker = () => {
-    return (
-      <div className="grid grid-cols-3 gap-2 p-2">
-        {months.map((month, index) => (
-          <Button
-            key={month}
-            variant={date?.getMonth() === index ? "default" : "ghost"}
-            onClick={() => {
-              const selectedDate = new Date(selectedYear, index, 1);
-              setDate(selectedDate);
-              setIsMonthPickerOpen(false); // Close the month picker
-            }}
-          >
-            {month}
-          </Button>
-        ))}
-      </div>
-    );
-  };
+  // Month picker
+  const renderMonthPicker = () => (
+    <div className="grid grid-cols-3 gap-2 p-2">
+      {MONTHS.map((month, index) => (
+        <Button
+          key={month}
+          variant={date?.getMonth() === index ? "default" : "ghost"}
+          onClick={() => {
+            const selectedDate = new Date(selectedYear, index, 1);
+            setDate(selectedDate);
+            setIsMonthPickerOpen(false);
+            if (errors.date) setErrors((prev) => ({ ...prev, date: false }));
+          }}
+          size="sm"
+        >
+          {month.slice(0, 3)}
+        </Button>
+      ))}
+    </div>
+  );
 
-  // Custom Year Picker
-  const renderYearPicker = () => {
-    return (
-      <div className="grid grid-cols-3 gap-2 p-2">
-        {years.map((year) => (
-          <Button
-            key={year}
-            variant={selectedYear === year ? "default" : "ghost"}
-            onClick={() => {
-              setSelectedYear(year);
-              const selectedDate = new Date(year, date.getMonth(), 1);
-              setDate(selectedDate);
-              setIsYearPickerOpen(false); // Close the year picker
-            }}
-          >
-            {year}
-          </Button>
-        ))}
-      </div>
-    );
-  };
+  // Year picker
+  const renderYearPicker = () => (
+    <div className="grid grid-cols-3 gap-2 p-2">
+      {years.map((year) => (
+        <Button
+          key={year}
+          variant={selectedYear === year ? "default" : "ghost"}
+          onClick={() => {
+            setSelectedYear(year);
+            const selectedDate = new Date(year, date.getMonth(), 1);
+            setDate(selectedDate);
+            setIsYearPickerOpen(false);
+            if (errors.date) setErrors((prev) => ({ ...prev, date: false }));
+          }}
+          size="sm"
+        >
+          {year}
+        </Button>
+      ))}
+    </div>
+  );
+
+  if (!show) return null;
 
   return (
-    <>
-      <div
-        id="create-client-form-container"
-        className="bg-black bg-opacity-60 client-info-container fixed flex flex-col justify-center items-center px-8 inset-x-0 inset-y-0 m-auto"
-      >
-        <div className="client-info-form w-full md:w-fit flex flex-col gap-6 bg-white shadow-2xl rounded-lg p-12">
-          <h2 className="text-2xl font-bold mb-4">New Invoice</h2>
-          <div className="flex justify-between flex-col md:flex-row items-center gap-4">
+    <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50 animate-in fade-in duration-200">
+      <div className="bg-background p-8 rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto animate-in fade-in-90 zoom-in-95 duration-200">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold">New Invoice</h2>
+          <p className="text-sm text-muted-foreground">
+            Create a new invoice. All fields are required.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Invoice Number */}
+          <div className="space-y-2">
             <Label htmlFor="invoice-number">
-              Invoice Number <span className="text-red-500">*</span>
+              Invoice Number <span className="text-destructive">*</span>
             </Label>
             <Input
               id="invoice-number"
               type="number"
-              required
-              onFocus={(e) => {
-                e.currentTarget.classList.remove("border-red-500");
+              value={invoiceNumber}
+              onChange={(e) => {
+                setInvoiceNumber(e.target.value);
+                if (errors.invoiceNumber) {
+                  setErrors((prev) => ({ ...prev, invoiceNumber: false }));
+                }
               }}
-              className="px-4 py-2 text-center md:w-36 border rounded-md outline-none transition-colors focus:border-kelly-green [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className={cn(
+                errors.invoiceNumber && "border-destructive",
+                "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              )}
+              placeholder="1001"
+              disabled={isSubmitting}
             />
+            {errors.invoiceNumber && (
+              <p className="text-sm text-destructive">
+                Invoice number is required
+              </p>
+            )}
           </div>
 
-          <div className="flex justify-between items-center flex-row gap-4">
-            {/* Month Picker */}
-            <Popover
-              open={isMonthPickerOpen}
-              onOpenChange={setIsMonthPickerOpen}
-            >
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-36 justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "MMMM") : <span>Pick a month</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                {renderMonthPicker()}
-              </PopoverContent>
-            </Popover>
+          {/* Month + Year Pickers */}
+          <div className="space-y-2">
+            <Label>
+              Invoice Period <span className="text-destructive">*</span>
+            </Label>
+            <div className="flex gap-4">
+              {/* Month Picker */}
+              <Popover
+                modal={true}
+                open={isMonthPickerOpen}
+                onOpenChange={setIsMonthPickerOpen}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 justify-start text-left font-normal",
+                      !date && "text-muted-foreground",
+                      errors.date && "border-destructive"
+                    )}
+                    disabled={isSubmitting}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "MMMM") : <span>Pick a month</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  {renderMonthPicker()}
+                </PopoverContent>
+              </Popover>
 
-            {/* Year Picker */}
-            <Popover open={isYearPickerOpen} onOpenChange={setIsYearPickerOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-36 justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "yyyy") : <span>Pick a year</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                {renderYearPicker()}
-              </PopoverContent>
-            </Popover>
+              {/* Year Picker */}
+              <Popover
+                modal={true}
+                open={isYearPickerOpen}
+                onOpenChange={setIsYearPickerOpen}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-32 justify-start text-left font-normal",
+                      !date && "text-muted-foreground",
+                      errors.date && "border-destructive"
+                    )}
+                    disabled={isSubmitting}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "yyyy") : <span>Year</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  {renderYearPicker()}
+                </PopoverContent>
+              </Popover>
+            </div>
+            {errors.date && (
+              <p className="text-sm text-destructive">
+                Please select a month and year
+              </p>
+            )}
           </div>
 
-          <div className="button-create-container flex flex-row justify-between">
+          {/* Footer */}
+          <div className="flex justify-end gap-2 pt-4">
             <Button
-              className="bg-gray-800 self-center"
-              id="create-client-btn"
-              onClick={changeShow}
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-
-            <Button
-              className="bg-kelly-green self-center"
-              id="create-client-btn"
-              onClick={createInvoice}
-            >
-              Create Invoice
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Invoice"}
             </Button>
           </div>
-        </div>
+        </form>
       </div>
-    </>
+    </div>
   );
 };
 

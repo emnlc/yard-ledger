@@ -14,8 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
+import { Edit2, Eye, Search } from "lucide-react";
 
-interface Clients {
+interface Client {
   id: string;
   name: string;
   address: string;
@@ -24,31 +25,37 @@ interface Clients {
 
 const Home = () => {
   const currentUser = User();
-  const [clients, setClients] = useState<Clients[]>([]);
-  const [filteredClients, setFilteredClients] = useState<Clients[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [showAddClient, setShowAddClient] = useState(false);
   const [showEditClient, setShowEditClient] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<Clients | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchText, setSearchText] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Set document title
   useEffect(() => {
     document.title = "Clients";
-  });
+  }, []);
 
-  const fetchClients = () => {
-    const clientsRef = ref(database, `users/${currentUser?.uid}/clients/`);
+  // Load clients data
+  useEffect(() => {
+    if (!currentUser?.uid) return;
 
-    onValue(clientsRef, (snapshot) => {
-      const clientsData: Clients[] = [];
+    const clientsRef = ref(database, `users/${currentUser.uid}/clients/`);
+
+    const unsubscribe = onValue(clientsRef, (snapshot) => {
+      const clientsData: Client[] = [];
       snapshot.forEach((childSnapshot) => {
         clientsData.push({
-          id: childSnapshot.key,
+          id: childSnapshot.key!,
           name: childSnapshot.val().clientName,
           address: childSnapshot.val().clientAddress,
           lot: childSnapshot.val().clientLot,
         });
       });
 
+      // Sort by lot number (descending), undefined lots go to the end
       const sortedClients = clientsData.sort((a, b) => {
         if (a.lot === undefined && b.lot === undefined) return 0;
         if (a.lot === undefined) return 1;
@@ -58,17 +65,22 @@ const Home = () => {
 
       setClients(sortedClients);
       setFilteredClients(sortedClients);
+      setIsLoading(false);
     });
-  };
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
+    return () => unsubscribe();
+  }, [currentUser?.uid]);
 
+  // Handle search
   const handleSearch = (query: string) => {
     setSearchText(query);
-
     const lowerCaseQuery = query.toLowerCase();
+
+    if (!query.trim()) {
+      setFilteredClients(clients);
+      return;
+    }
+
     const filtered = clients.filter(
       (client) =>
         client.name.toLowerCase().includes(lowerCaseQuery) ||
@@ -80,88 +92,131 @@ const Home = () => {
     setFilteredClients(filtered);
   };
 
-  const handleEditClick = (client: Clients) => {
+  // Handle edit click
+  const handleEditClick = (client: Client) => {
     setSelectedClient(client);
     setShowEditClient(true);
   };
 
-  const handleUpdate = () => {
-    fetchClients();
+  // Handle modal close
+  const handleCloseAddClient = () => {
+    setShowAddClient(false);
   };
+
+  const handleCloseEditClient = () => {
+    setShowEditClient(false);
+    setSelectedClient(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-muted-foreground">Loading clients...</p>
+      </div>
+    );
+  }
 
   return (
     <>
-      <div
-        id="clients-container"
-        className="md:container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto"
-      >
-        <div className="clients-header gap-8 h-60 md:h-96 flex flex-col justify-end items-center md:justify-end md:items-start">
-          <h1 id="title" className="text-5xl font-bold row-start-3">
-            Clients
-          </h1>
-
-          <div className="row-start-4">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header */}
+        <div className="flex flex-col gap-6 mb-8 mt-16">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <h1 className="text-3xl lg:text-5xl font-bold text-foreground">
+              Clients
+            </h1>
             <Button
-              id="newClientBtn"
-              className="bg-kelly-green"
-              onClick={() => {
-                setShowAddClient(!showAddClient);
-              }}
+              onClick={() => setShowAddClient(true)}
+              className="w-fit bg-primary hover:opacity-90 transition-opacity"
             >
               New Client
             </Button>
           </div>
+
+          {/* Search Bar */}
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by name, address, or lot..."
+              value={searchText}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
 
-        <div
-          id="clients-body-container"
-          className="clients-body flex flex-col w-full justify-start px-8 md:px-0 items-center gap-8 md:grid md:grid-cols-3 md:gap-x-4 md:gap-y-8 xl:grid-cols-4 2xl:grid-cols-5"
-        >
-          <Input
-            type="text"
-            id="client-search"
-            className="focus:border-kelly-green md:place-self-start md:w-80 md:h-10 md:col-span-3 xl:col-span-4 2xl:col-span-5"
-            placeholder="Search by name, address, or lot"
-            value={searchText}
-            onChange={(e) => handleSearch(e.target.value)}
-          ></Input>
-
-          {filteredClients.map((client) => (
-            <Card key={client.id}>
-              <CardHeader>
-                <CardTitle className="line-clamp-1">{client.name}</CardTitle>
-                <CardDescription>
-                  <span>{client.address}</span>
-                  <br />
-                  <span>{client.lot ? "Lot #" + client.lot : <br />}</span>
-                </CardDescription>
-              </CardHeader>
-              <CardFooter className="justify-between">
-                <button
-                  className="text-lg"
-                  onClick={() => handleEditClick(client)}
-                >
-                  <i className="fa-regular fa-pen-to-square text-green-500"></i>
-                </button>
-                <Link
-                  className="transition-all text-blue-500 hover:underline text-sm font-bold"
-                  to={`/home/client-invoice/${client.id}`}
-                >
-                  View
-                </Link>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        {/* Clients Grid */}
+        {filteredClients.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <p className="text-muted-foreground text-lg mb-2">
+              {searchText
+                ? "No clients found matching your search."
+                : "No clients yet."}
+            </p>
+            {!searchText && (
+              <p className="text-muted-foreground text-sm">
+                Click "New Client" to add your first client.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+            {filteredClients.map((client) => (
+              <Card
+                key={client.id}
+                className="hover:shadow-lg transition-shadow duration-200"
+              >
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg line-clamp-1">
+                    {client.name}
+                  </CardTitle>
+                  <CardDescription className="space-y-1">
+                    <p className="text-sm line-clamp-2">{client.address}</p>
+                    {client.lot && (
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Lot #{client.lot}
+                      </p>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter className="flex justify-between items-center pt-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEditClick(client)}
+                    className="h-8 w-8"
+                  >
+                    <Edit2 className="h-4 w-4 text-primary" />
+                    <span className="sr-only">Edit client</span>
+                  </Button>
+                  <Link to={`/home/client-invoice/${client.id}`}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary hover:text-primary/80"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Modals */}
       {showAddClient && (
-        <ClientInfo show={showAddClient} setShow={setShowAddClient} />
+        <ClientInfo show={showAddClient} setShow={handleCloseAddClient} />
       )}
+
       {showEditClient && selectedClient && (
         <EditClientInfoModal
           client={selectedClient}
-          setShow={setShowEditClient}
-          onUpdate={handleUpdate}
+          setShow={handleCloseEditClient}
+          onUpdate={() => {}} // Data updates automatically via Firebase listener
         />
       )}
     </>

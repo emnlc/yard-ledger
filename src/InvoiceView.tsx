@@ -1,4 +1,4 @@
-import { onValue, ref, update } from "firebase/database";
+import { onValue, ref, remove, update } from "firebase/database";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { database } from "./ts/firebase/auth";
@@ -19,6 +19,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "./components/ui/input";
 import EditEntryInfoModal from "./components/EditEntryInfoModal";
+import { Edit2, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Invoice {
   key: string | null;
@@ -48,7 +50,7 @@ interface Client {
   lot: string;
 }
 
-interface User {
+interface UserData {
   email: string;
   company: string;
   address: string;
@@ -69,195 +71,145 @@ const InvoiceView = () => {
   const [invoice, setInvoice] = useState<Invoice>();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [client, setClient] = useState<Client>();
+  const [user, setUser] = useState<UserData>();
 
-  // Open the edit modal and set the selected entry
+  // Firebase refs
+  const invoiceRef = ref(
+    database,
+    `users/${currentUser?.uid}/clients/${userUID}/invoices/${invoiceUID}`
+  );
+  const entriesRef = ref(
+    database,
+    `users/${currentUser?.uid}/clients/${userUID}/invoices/${invoiceUID}/entries`
+  );
+  const clientRef = ref(
+    database,
+    `users/${currentUser?.uid}/clients/${userUID}`
+  );
+  const userRef = ref(database, `users/${currentUser?.uid}`);
+
+  // Delete entry handler
+  const deleteEntry = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this entry?")) {
+      const entryToDelete = ref(
+        database,
+        `users/${currentUser?.uid}/clients/${userUID}/invoices/${invoiceUID}/entries/${id}`
+      );
+      remove(entryToDelete);
+    }
+  };
+
+  // Edit entry handlers
   const handleEditClick = (entry: Entry) => {
     setSelectedEntry(entry);
     setIsEditModalOpen(true);
   };
 
-  // Close the edit modal
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setSelectedEntry(null);
   };
 
-  const showEntryForm = () => {
-    setShowEntry(!showEntry);
-  };
-
-  const invoiceRef = ref(
-    database,
-    `users/${currentUser?.uid}/clients/${userUID}/invoices/${invoiceUID}`
-  );
-
-  const entriesRef = ref(
-    database,
-    `users/${currentUser?.uid}/clients/${userUID}/invoices/${invoiceUID}/entries`
-  );
-
-  const clientRef = ref(
-    database,
-    `users/${currentUser?.uid}/clients/${userUID}`
-  );
-
-  const applySalesTax = () => {
-    const salesTaxStatus = (
-      document.getElementById("sales-tax-checkbox") as HTMLInputElement
-    ).checked;
+  // Sales tax handler
+  const handleSalesTaxChange = (checked?: boolean, value?: string) => {
+    const isChecked = checked ?? invoice?.applySales ?? false;
+    const taxValue = value ? parseFloat(value) : invoice?.salesTax ?? 0;
 
     update(invoiceRef, {
-      applySales: salesTaxStatus,
-    });
-
-    const salesTax = (
-      document.getElementById("sales-tax-input") as HTMLInputElement
-    ).value;
-
-    if (salesTaxStatus && salesTax) {
-      const newFinalTotal = (invoice?.subtotal ?? 0) - parseFloat(salesTax);
-
-      update(invoiceRef, {
-        invoiceFinalTotal: newFinalTotal,
-        invoiceSalesTax: salesTax,
-      });
-      return;
-    }
-
-    update(invoiceRef, {
-      invoiceFinalTotal: invoice?.subtotal,
-      invoiceSalesTax: 0,
+      applySales: isChecked,
+      invoiceSalesTax: taxValue,
+      invoiceFinalTotal: isChecked
+        ? (invoice?.subtotal ?? 0) - taxValue
+        : invoice?.subtotal ?? 0,
     });
   };
 
-  const applySalesTaxMobile = () => {
-    const salesTaxStatus = (
-      document.getElementById("apply-sales-tax-mobile") as HTMLInputElement
-    ).checked;
-
-    update(invoiceRef, {
-      applySales: salesTaxStatus,
-    });
-
-    const salesTax = (
-      document.getElementById("sales-tax-input-mobile") as HTMLInputElement
-    ).value;
-
-    if (salesTaxStatus && salesTax) {
-      const newFinalTotal = (invoice?.subtotal ?? 0) - parseFloat(salesTax);
-
-      update(invoiceRef, {
-        invoiceFinalTotal: newFinalTotal,
-        invoiceSalesTax: salesTax,
-      });
-      return;
-    }
-
-    update(invoiceRef, {
-      invoiceFinalTotal: invoice?.subtotal,
-      invoiceSalesTax: 0,
-    });
-  };
-
+  // Set document title
   useEffect(() => {
-    document.title = `${
-      client && invoice ? `${client.name} ${invoice.month}` : "Yard Ledger"
-    }`;
-  }, [client]);
+    document.title =
+      client && invoice ? `${client.name} ${invoice.month}` : "Yard Ledger";
+  }, [client, invoice]);
 
+  // Load invoice data
   useEffect(() => {
-    onValue(invoiceRef, (snapshot) => {
+    if (!currentUser?.uid) return;
+
+    const unsubscribe = onValue(invoiceRef, (snapshot) => {
       const data = snapshot.val();
-      setInvoice({
-        key: snapshot.key,
-        number: data.invoiceNumber,
-        month: data.invoiceMonth,
-        year: data.invoiceYear,
-        status: data.invoiceStatus,
-        finalTotal: data.invoiceFinalTotal,
-        salesTax: data.invoiceSalesTax,
-        applySales: data.applySales,
-        subtotal: data.invoiceSubtotal,
-      });
+      if (data) {
+        setInvoice({
+          key: snapshot.key,
+          number: data.invoiceNumber,
+          month: data.invoiceMonth,
+          year: data.invoiceYear,
+          status: data.invoiceStatus,
+          finalTotal: data.invoiceFinalTotal,
+          salesTax: data.invoiceSalesTax,
+          applySales: data.applySales,
+          subtotal: data.invoiceSubtotal,
+        });
+      }
     });
-  }, [currentUser]);
 
+    return () => unsubscribe();
+  }, [currentUser?.uid]);
+
+  // Load client data
   useEffect(() => {
+    if (!currentUser?.uid) return;
+
     const unsubscribe = onValue(clientRef, (snapshot) => {
       const data = snapshot.val();
-      setClient({
-        name: data.clientName,
-        address: data.clientAddress,
-        lot: data.clientLot,
-      });
+      if (data) {
+        setClient({
+          name: data.clientName,
+          address: data.clientAddress,
+          lot: data.clientLot,
+        });
+      }
     });
 
-    // Cleanup function to unsubscribe from the listener when the component unmounts
     return () => unsubscribe();
-  }, []);
+  }, [currentUser?.uid]);
 
+  // Load entries data
   useEffect(() => {
-    onValue(entriesRef, (snapshot) => {
-      const entriesData: Entry[] = [];
+    if (!currentUser?.uid) return;
 
-      snapshot.forEach((childsnapshot) => {
+    const unsubscribe = onValue(entriesRef, (snapshot) => {
+      const entriesData: Entry[] = [];
+      snapshot.forEach((childSnapshot) => {
         entriesData.push({
-          date: childsnapshot.val().date,
-          desc: childsnapshot.val().description,
-          unitPrice: childsnapshot.val().unitPrice,
-          unitType: childsnapshot.val().unitType,
-          total: childsnapshot.val().total,
-          id: childsnapshot.key,
-          rawDate: childsnapshot.val().rawDate,
+          date: childSnapshot.val().date,
+          desc: childSnapshot.val().description,
+          unitPrice: childSnapshot.val().unitPrice,
+          unitType: childSnapshot.val().unitType,
+          total: childSnapshot.val().total,
+          id: childSnapshot.key!,
+          rawDate: childSnapshot.val().rawDate,
         });
       });
 
-      // Sort entries by rawDate in descending order (most recent first)
-      // Entries without rawDate will be placed at the end
+      // Sort entries by date
       entriesData.sort((a, b) => {
         const dateA = a.rawDate ? new Date(a.rawDate).getTime() : Infinity;
         const dateB = b.rawDate ? new Date(b.rawDate).getTime() : Infinity;
-
-        // If both have rawDate, sort by date
-        if (dateA !== Infinity && dateB !== Infinity) {
-          return dateA - dateB; // Sort in ascending order
-        }
-
-        // If one has rawDate and the other doesn't, the one with rawDate comes first
-        if (dateA !== Infinity) return -1;
-        if (dateB !== Infinity) return 1;
-
-        // If neither has rawDate, maintain their original order
-        return 0;
+        return dateA - dateB;
       });
 
       setEntries(entriesData);
     });
-  }, [currentUser]);
 
-  const initialTotal = entries.reduce(
-    (prev, entry) => prev + parseFloat(String(entry.total) || "0"),
-    0
-  );
+    return () => unsubscribe();
+  }, [currentUser?.uid]);
 
+  // Load user data
   useEffect(() => {
-    const newFinalTotal = invoice?.applySales
-      ? initialTotal - invoice.salesTax
-      : initialTotal;
+    if (!currentUser?.uid) return;
 
-    update(invoiceRef, {
-      invoiceSubtotal: initialTotal,
-      invoiceFinalTotal: newFinalTotal,
-    });
-  });
-
-  const [user, setUser] = useState<User>();
-
-  useEffect(() => {
-    const unsubscribe = onValue(
-      ref(database, `users/${currentUser?.uid}`),
-      (snapshot) => {
-        const data = snapshot.val();
+    const unsubscribe = onValue(userRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
         setUser({
           email: data.email,
           company: data.company,
@@ -270,230 +222,269 @@ const InvoiceView = () => {
           r: data.r,
         });
       }
+    });
+
+    return () => unsubscribe();
+  }, [currentUser?.uid]);
+
+  // Update invoice totals when entries change
+  useEffect(() => {
+    if (!invoice) return;
+
+    const subtotal = entries.reduce(
+      (sum, entry) => sum + (parseFloat(String(entry.total)) || 0),
+      0
     );
 
-    return unsubscribe;
-  }, [user]);
+    const finalTotal = invoice.applySales
+      ? subtotal - invoice.salesTax
+      : subtotal;
+
+    update(invoiceRef, {
+      invoiceSubtotal: subtotal,
+      invoiceFinalTotal: finalTotal,
+    });
+  }, [entries, invoice?.applySales, invoice?.salesTax]);
+
+  if (!invoice || !client) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <>
-      <div className="md:container flex h-auto flex-col gap-8 w-full mb-16 justify-center sm:mx-auto">
-        {invoice && client && (
-          <>
-            <div className="invoice-entries-header gap-4 h-60 md:h-96 flex flex-col justify-end items-center md:justify-end md:items-start">
-              <h1 className="text-center text-5xl font-bold ">
-                Invoice #{invoice.number}
-              </h1>
-              <div className="flex flex-col gap-">
-                <h1 className="text-2xl font-medium">{client.name}</h1>
-                <h1 className="text-2xl font-medium">
-                  {invoice.month}, {invoice.year}
-                </h1>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header */}
+        <div className="flex flex-col mt-16 lg:flex-row lg:justify-between lg:items-start gap-6 mb-8">
+          {/* Invoice Info */}
+          <div className="flex flex-col gap-4">
+            <h1 className="text-3xl lg:text-5xl font-bold text-foreground">
+              Invoice #{invoice.number}
+            </h1>
+            <div className="flex flex-col gap-1">
+              <h2 className="text-xl lg:text-2xl font-medium text-foreground">
+                {client.name}
+              </h2>
+              <p className="text-lg lg:text-xl font-medium text-muted-foreground">
+                {invoice.month}, {invoice.year}
+              </p>
+            </div>
+          </div>
+
+          {/* Totals Card */}
+          <div className="flex flex-col gap-4 w-full lg:w-auto lg:min-w-[320px]">
+            {/* Totals */}
+            <div className="flex flex-col gap-3 p-4 bg-card rounded-lg border border-border shadow-sm">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-medium text-foreground">
+                  ${invoice.subtotal.toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Discount</span>
+                <span className="font-medium text-foreground">
+                  ${invoice.salesTax}
+                </span>
+              </div>
+
+              <div className="pt-3 border-t border-border">
+                <div className="flex justify-between items-center">
+                  <span className="text-base font-semibold text-foreground">
+                    Total
+                  </span>
+                  <span className="text-xl font-bold text-primary">
+                    ${invoice.finalTotal.toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-4 self-center md:self-start">
-              <Button
-                id="new-invoice-btn"
-                className="bg-kelly-green hover:opacity-80 transition-all"
-                onClick={showEntryForm}
-              >
-                New Entry
-              </Button>
-
-              {user && (
-                <PDFDownloadLink
-                  document={
-                    <PdfFile
-                      invoice={invoice}
-                      entries={entries}
-                      client={client}
-                      user={user}
-                    />
+            {/* Sales Tax Control */}
+            <div className="flex items-center justify-between gap-4 p-3 bg-muted/50 rounded-lg border border-border">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="sales-tax-checkbox"
+                  checked={invoice.applySales}
+                  onCheckedChange={(checked) =>
+                    handleSalesTaxChange(checked === true)
                   }
-                  fileName={`${client.name} ${invoice.month} ${invoice.year} Invoice.pdf`}
+                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+                <Label
+                  htmlFor="sales-tax-checkbox"
+                  className="text-sm font-medium cursor-pointer"
                 >
-                  {({ loading }) =>
-                    loading ? (
-                      <Button id="generate-pdf-btn" className="bg-blue-400 ">
-                        Loading ...
-                      </Button>
-                    ) : (
-                      <Button id="generate-pdf-btn" className="bg-blue-400">
-                        Generate
-                      </Button>
-                    )
-                  }
-                </PDFDownloadLink>
-              )}
-            </div>
+                  Apply Discount
+                </Label>
+              </div>
 
-            <Table className="hidden md:table">
-              <TableCaption>Entries for {invoice.month}</TableCaption>
+              <Input
+                type="number"
+                onChange={(e) =>
+                  handleSalesTaxChange(undefined, e.target.value)
+                }
+                value={invoice.salesTax}
+                id="sales-tax-input"
+                className="w-24 h-9 text-right focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-4 mb-8">
+          <Button
+            onClick={() => setShowEntry(true)}
+            className="bg-primary hover:opacity-90 transition-opacity"
+          >
+            New Entry
+          </Button>
+
+          {user && (
+            <PDFDownloadLink
+              document={
+                <PdfFile
+                  invoice={invoice}
+                  entries={entries}
+                  client={client}
+                  user={user}
+                />
+              }
+              fileName={`${client.name} ${invoice.month} ${invoice.year} Invoice.pdf`}
+            >
+              {({ loading }) => (
+                <Button
+                  disabled={loading}
+                  className="bg-blue-500 hover:bg-blue-600"
+                >
+                  {loading ? "Loading..." : "Generate PDF"}
+                </Button>
+              )}
+            </PDFDownloadLink>
+          )}
+        </div>
+
+        {/* Entries Table/List */}
+        <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+          {/* Desktop Table */}
+          <div className="hidden md:block">
+            <Table>
+              <TableCaption className="py-2 text-xs border-t border-border">
+                Entries for {invoice.month}
+              </TableCaption>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-32"></TableHead>
-                  <TableHead className="text-center">Date</TableHead>
-                  <TableHead className="text-left">Description</TableHead>
-                  <TableHead className="text-center">Unit Price</TableHead>
-                  <TableHead className="text-center">Line Total</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Unit Price</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
                 </TableRow>
               </TableHeader>
-
               <TableBody>
                 {entries.map((entry) => (
                   <TableRow key={entry.id}>
-                    <TableCell className="flex gap-4 justify-center items-center">
-                      <button
-                        className="text-lg"
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleEditClick(entry)}
+                        className="h-8 w-8"
                       >
-                        <i className="fa-regular fa-pen-to-square text-green-500"></i>
-                      </button>
+                        <Edit2 className="h-4 w-4 text-primary" />
+                      </Button>
                     </TableCell>
-                    <TableCell className="font-medium text-center">
-                      {entry.date}
+                    <TableCell className="font-medium">{entry.date}</TableCell>
+                    <TableCell>{entry.desc}</TableCell>
+                    <TableCell className="text-right">
+                      {entry.unitPrice && (
+                        <>
+                          ${entry.unitPrice}
+                          {entry.unitType && ` / ${entry.unitType}`}
+                        </>
+                      )}
                     </TableCell>
-                    <TableCell className="font-medium text-left">
-                      {entry.desc}
-                    </TableCell>
-                    <TableCell className="font-medium text-center">
-                      $
-                      {entry.unitType
-                        ? `${entry.unitPrice} / ${entry.unitType}`
-                        : entry.unitPrice}
-                    </TableCell>
-                    <TableCell className="text-center font-medium">
-                      {entry.total ? `$${entry.total}` : ""}
+                    <TableCell className="text-right font-medium">
+                      ${entry.total}
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          </div>
 
-            <div className="hidden md:flex table-footer flex-col gap-4 self-end">
-              <div className="text-sm price-groups flex flex-col font-medium border border-l-0 border-r-0 border-t-0 border-b-black">
-                <div className="flex w-full gap-16 justify-between">
-                  <span>SUBTOTAL:</span>
-                  <span>${invoice.subtotal}</span>
-                </div>
-
-                <div className="flex w-full gap-16 justify-between">
-                  <span>SALES TAX:</span>
-                  <span>${invoice.salesTax}</span>
-                </div>
-
-                <div className="flex w-full gap-16 justify-between">
-                  <span>TOTAL:</span>
-                  <span>${invoice.finalTotal}</span>
-                </div>
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-border">
+            {entries.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                No entries yet. Click "New Entry" to add one.
               </div>
-
-              <div className="sales-tax-container w-full flex justify-between items-center font-medium">
-                <div className="flex justify-center items-center gap-2">
-                  <Label htmlFor="sales-tax-checkbox">Apply Sales</Label>
-                  <input
-                    type="checkbox"
-                    name="apply-sales-tax"
-                    id="sales-tax-checkbox"
-                    checked={invoice.applySales}
-                    onChange={applySalesTax}
-                  />
-                </div>
-
-                <Input
-                  type="number"
-                  onChange={applySalesTax}
-                  defaultValue={invoice.salesTax}
-                  id="sales-tax-input"
-                  className="border rounded-md outline-none text-right text-sm transition-colors focus:border-kelly-green w-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                ></Input>
-              </div>
-            </div>
-
-            {/* Mobile Div */}
-            <div className="md:hidden flex flex-col gap-8">
-              <div className="button-group flex justify-center"></div>
-
-              <div className="entry-container flex flex-col gap-8 ">
-                <div className="invoice-total-line flex justify-center font-bold text-2xl">
-                  TOTAL: ${invoice.finalTotal}
-                </div>
-                {entries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="entry-card flex gap-8 p-4 mx-4 bg-white border rounded-lg shadow-lg"
-                  >
-                    <div className="entry-card-left w-full">
-                      <h1 className="font-bold">{entry.date}</h1>
-                      <p className="">{entry.desc}</p>
+            ) : (
+              entries.map((entry) => (
+                <div key={entry.id} className="p-4 space-y-3">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1 space-y-1">
+                      <p className="font-semibold text-foreground">
+                        {entry.date}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {entry.desc}
+                      </p>
                     </div>
-                    <div className="entry-card-right w-full flex flex-col justify-between">
-                      <div className="entry-card-line-1 flex justify-between">
-                        <span className=" font-bold line-clamp-1">
-                          UNIT PRICE:
-                        </span>
-                        <span>
-                          $
-                          {entry.unitType
-                            ? `${entry.unitPrice} / ${entry.unitType}`
-                            : entry.unitPrice}
-                        </span>
-                      </div>
-
-                      <div className="entry-card-line-2 flex justify-between">
-                        <span className=" font-bold">TOTAL:</span>
-                        <span>${entry.total}</span>
-                      </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditClick(entry)}
+                        className="h-8 w-8"
+                      >
+                        <Edit2 className="h-4 w-4 text-primary" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteEntry(entry.id)}
+                        className="h-8 w-8"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </div>
-                ))}
 
-                <div className="subtotal-and-sales-tax-fields flex justify-between">
-                  <div className="w-full flex justify-center ">
-                    <h1 className=" font-medium">
-                      SUBTOTAL:{" "}
-                      <span className="font-bold">${invoice.subtotal}</span>
-                    </h1>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Unit Price:</span>
+                    <span className="font-medium">
+                      {entry.unitPrice && (
+                        <>
+                          ${entry.unitPrice}
+                          {entry.unitType && ` / ${entry.unitType}`}
+                        </>
+                      )}
+                    </span>
                   </div>
-                  <div className="w-full flex justify-center">
-                    <h1 className=" font-medium">
-                      SALES TAX:{" "}
-                      <span className="font-bold">${invoice.salesTax}</span>
-                    </h1>
+
+                  <div className="flex justify-between text-sm pt-2 border-t border-border">
+                    <span className="font-semibold text-foreground">
+                      Total:
+                    </span>
+                    <span className="font-bold text-primary">
+                      ${entry.total}
+                    </span>
                   </div>
                 </div>
-              </div>
-              <div className="sales-tax-container w-full flex justify-center items-center self-end font-medium gap-8">
-                <div className="flex gap-4">
-                  <label htmlFor="apply-sales-tax-mobile">Discount</label>
-                  <input
-                    type="checkbox"
-                    name="apply-sales-tax-mobile"
-                    id="apply-sales-tax-mobile"
-                    checked={invoice.applySales}
-                    onChange={applySalesTaxMobile}
-                  />
-                </div>
-                <div className="self-end">
-                  $
-                  <input
-                    type="number"
-                    onChange={applySalesTaxMobile}
-                    defaultValue={invoice.salesTax}
-                    id="sales-tax-input-mobile"
-                    className="border rounded-md outline-none text-base transition-colors focus:border-kelly-green w-14 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+              ))
+            )}
+          </div>
+        </div>
       </div>
 
-      {showEntry ? (
-        <EntryInfo show={showEntry} setShow={setShowEntry}></EntryInfo>
-      ) : null}
+      {/* Modals */}
+      {showEntry && <EntryInfo show={showEntry} setShow={setShowEntry} />}
 
       {isEditModalOpen && selectedEntry && (
         <EditEntryInfoModal
