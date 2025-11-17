@@ -69,4 +69,4 @@ npm run build
 
 ## 📸 Preview
 
-<video width="630" height="300" src="https://github.com/user-attachments/assets/f097ef4a-951a-4b30-99d9-7b82aba71afd"></video>
+<video width="630" height="300" src="https://github.com/user-attachments/assets/286e26f7-4f16-4c30-aa74-23fdf7c49def"></video>
